@@ -50,15 +50,15 @@ export function PromptListItem({ prompt, isSelected = false, isCopied = false, o
 
   const containerClass = variant === 'pane'
     ? cn(
-        'group relative border-b border-border py-5 px-5 sm:py-4 sm:px-4 hover:bg-muted/50 transition-colors cursor-pointer overflow-hidden',
+        'group relative border-b border-border py-5 px-5 sm:py-4 sm:px-4 md:hover:bg-muted/50 transition-colors cursor-pointer overflow-hidden',
         !isCopied && isSelected
-          ? 'bg-primary/5 border-l-4 border-l-primary'
+          ? 'bg-primary/3 border-l-4 border-l-primary'
           : '',
         className,
       )
     : cn(
-        'group relative bg-card rounded-3xl sm:rounded-2xl py-5 px-5 sm:py-4 sm:px-5 transition-all cursor-pointer overflow-hidden shadow-sm hover:shadow-md border border-border',
-        !isCopied && isSelected ? 'ring-2 ring-primary shadow-xl' : '',
+        'group relative bg-card rounded-3xl sm:rounded-2xl py-5 px-5 sm:py-4 sm:px-5 transition-all cursor-pointer overflow-hidden shadow-sm md:hover:shadow-lg border border-border',
+        !isCopied && isSelected ? 'ring-2 ring-primary shadow-lg' : '',
         className,
       );
 
@@ -72,7 +72,7 @@ export function PromptListItem({ prompt, isSelected = false, isCopied = false, o
       {/* Copy overlay */}
       {isCopied && (
         <div
-          className="absolute inset-0 bg-background/95 dark:bg-background/95 z-10 flex items-center justify-center shadow-2xl"
+          className="absolute inset-0 bg-primary/25 backdrop-blur-[2px] z-10 flex items-center justify-center"
           style={{
             animation: 'fadeIn 0.15s ease-in, fadeOut 0.25s ease-out 1s forwards'
           }}
