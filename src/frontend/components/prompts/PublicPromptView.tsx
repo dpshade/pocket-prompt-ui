@@ -161,7 +161,7 @@ export function PublicPromptView({ txId, onBack }: PublicPromptViewProps) {
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="flex-none border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="flex-none border-b bg-background">
         <div className="flex items-center gap-3 px-4 sm:px-6 py-4">
           <Button
             variant="ghost"

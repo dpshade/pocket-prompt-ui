@@ -50,15 +50,15 @@ export function PromptListItem({ prompt, isSelected = false, isCopied = false, o
 
   const containerClass = variant === 'pane'
     ? cn(
-        'group relative px-5 sm:px-6 py-5 sm:py-4 cursor-pointer transition-all overflow-hidden',
+        'group relative border-b border-border py-5 px-5 sm:py-4 sm:px-4 hover:bg-muted/50 transition-colors cursor-pointer overflow-hidden',
         !isCopied && isSelected
-          ? 'backdrop-blur-md bg-primary/15 ring-primary/60 shadow-lg -mt-px'
-          : 'hover:bg-muted/50',
+          ? 'bg-primary/5 border-l-4 border-l-primary'
+          : '',
         className,
       )
     : cn(
-        'group relative bg-card rounded-3xl sm:rounded-2xl py-5 px-5 sm:py-4 sm:px-5 transition-all cursor-pointer overflow-hidden shadow-sm hover:shadow-md',
-        !isCopied && isSelected ? 'ring-2 ring-primary/80 shadow-xl backdrop-blur-sm bg-gradient-to-br from-primary/12 to-primary/8' : '',
+        'group relative bg-card rounded-3xl sm:rounded-2xl py-5 px-5 sm:py-4 sm:px-5 transition-all cursor-pointer overflow-hidden shadow-sm hover:shadow-md border border-border',
+        !isCopied && isSelected ? 'ring-2 ring-primary shadow-xl' : '',
         className,
       );
 
@@ -72,9 +72,8 @@ export function PromptListItem({ prompt, isSelected = false, isCopied = false, o
       {/* Copy overlay */}
       {isCopied && (
         <div
-          className="absolute inset-0 backdrop-blur-[20px] backdrop-saturate-[1.4] bg-white/40 dark:bg-black/30 z-10 flex items-center justify-center shadow-2xl"
+          className="absolute inset-0 bg-background/95 dark:bg-background/95 z-10 flex items-center justify-center shadow-2xl"
           style={{
-            WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
             animation: 'fadeIn 0.15s ease-in, fadeOut 0.25s ease-out 1s forwards'
           }}
         >

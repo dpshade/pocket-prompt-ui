@@ -157,10 +157,10 @@ export function ConnectWalletModal({ open, onClose, onConnect }: ConnectWalletMo
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
       onClick={handleBackdropClick}
     >
-      <div className="relative w-full max-w-md rounded-lg border bg-card/95 backdrop-blur-sm p-6 shadow-lg mx-4">
+      <div className="relative w-full max-w-md rounded-lg border bg-card p-6 shadow-lg mx-4">
         {/* Header */}
         <div className="mb-4">
           {/* Back button for keyfile page */}

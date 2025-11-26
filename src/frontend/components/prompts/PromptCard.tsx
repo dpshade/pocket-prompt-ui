@@ -48,16 +48,15 @@ export function PromptCard({ prompt, isSelected = false, isCopied = false, onVie
 
   return (
     <Card
-      className={`group cursor-pointer hover:-translate-y-1 hover:shadow-2xl transition-transform duration-200 active:scale-[0.98] h-[250px] flex flex-col relative border border-white/20 dark:border-white/10 ${!isCopied && isSelected ? 'ring-2 ring-primary shadow-xl -translate-y-1' : ''}`}
+      className={`group cursor-pointer hover:-translate-y-1 hover:shadow-2xl transition-transform duration-200 active:scale-[0.98] h-[250px] flex flex-col relative ${!isCopied && isSelected ? 'ring-2 ring-primary shadow-xl -translate-y-1' : ''}`}
       onClick={handleCopy}
       title="Click to copy"
     >
       {/* Copy overlay */}
       {isCopied && (
         <div
-          className="absolute inset-0 backdrop-blur-[20px] backdrop-saturate-[1.4] bg-white/30 dark:bg-black/30 rounded-lg shadow-2xl z-10 flex items-center justify-center"
+          className="absolute inset-0 bg-background/95 dark:bg-background/95 rounded-lg shadow-2xl z-10 flex items-center justify-center"
           style={{
-            WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
             animation: 'fadeIn 0.15s ease-in, fadeOut 0.25s ease-out 1s forwards'
           }}
         >

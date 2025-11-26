@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Filter, Save, X, ChevronUp } from 'lucide-react';
+import { Filter, Save, X } from 'lucide-react';
 import { Input } from '@/frontend/components/ui/input';
 import { Button } from '@/frontend/components/ui/button';
 import { Badge } from '@/frontend/components/ui/badge';
@@ -26,6 +26,7 @@ interface BooleanBuilderProps {
   onClose: () => void;
   isOpen: boolean;
   collections: UseCollectionsReturn;
+  embedded?: boolean;
 }
 
 export function BooleanBuilder({
@@ -38,6 +39,7 @@ export function BooleanBuilder({
   onClose,
   isOpen,
   collections,
+  embedded = false,
 }: BooleanBuilderProps) {
   const [cursorPosition, setCursorPosition] = useState(0);
   const [parsedExpression, setParsedExpression] = useState<BooleanExpression | null>(null);
@@ -280,13 +282,12 @@ export function BooleanBuilder({
   const showTagToggle = displayedTags.length > 12;
 
   return (
-    <div
-      className="rounded-[24px] backdrop-blur-3xl backdrop-saturate-150 bg-white/25 dark:bg-black/35 border border-white/40 dark:border-white/25 shadow-2xl ring-1 ring-black/10 dark:ring-white/10"
-      style={{ WebkitBackdropFilter: 'blur(48px) saturate(1.5)' }}
-    >
+    <div className={embedded ? "" : "rounded-lg border border-border bg-card shadow-lg"}>
       <div
-        className="flex items-center gap-3 border-b border-white/50 dark:border-white/20 px-3 py-2.5 rounded-t-[24px] cursor-pointer hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
-        onClick={onClose}
+        className={cn(
+          "flex items-center gap-3 px-3 py-2.5",
+          embedded ? "border-t border-border" : "border-b border-border rounded-t-lg"
+        )}
       >
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
           <Filter className="h-4 w-4" />
@@ -310,28 +311,13 @@ export function BooleanBuilder({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-white/10 dark:hover:bg-white/5"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSaveDialogOpen(true);
-              }}
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              onClick={() => setSaveDialogOpen(true)}
               title="Save to collection"
             >
               <Save className="h-4 w-4" />
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-white/10 dark:hover:bg-white/5"
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
-            }}
-            title="Collapse builder"
-          >
-            <ChevronUp className="h-4 w-4" />
-          </Button>
         </div>
       </div>
 
