@@ -51,7 +51,7 @@ export const usePrompts = create<PromptsState>((set, get) => ({
   onUploadComplete: undefined,
 
   loadPrompts: async (password?: string) => {
-    // Use Turso backend when enabled
+    // Use Turso backend (local SQLite in desktop, cloud in web)
     if (FEATURE_FLAGS.TURSO_ENABLED && isTursoConfigured()) {
       return loadPromptsFromTurso(set, get);
     }
@@ -61,7 +61,7 @@ export const usePrompts = create<PromptsState>((set, get) => ({
   },
 
   addPrompt: async (promptData, password?: string) => {
-    // Use Turso backend when enabled
+    // Use Turso backend (local SQLite in desktop, cloud in web)
     if (FEATURE_FLAGS.TURSO_ENABLED && isTursoConfigured()) {
       return addPromptToTurso(set, get, promptData);
     }
@@ -71,7 +71,7 @@ export const usePrompts = create<PromptsState>((set, get) => ({
   },
 
   updatePrompt: async (id, updates, password?: string) => {
-    // Use Turso backend when enabled
+    // Use Turso backend (local SQLite in desktop, cloud in web)
     if (FEATURE_FLAGS.TURSO_ENABLED && isTursoConfigured()) {
       return updatePromptInTurso(set, get, id, updates);
     }
@@ -81,7 +81,7 @@ export const usePrompts = create<PromptsState>((set, get) => ({
   },
 
   archivePrompt: async (id, password?: string) => {
-    // Use Turso backend when enabled
+    // Use Turso backend (local SQLite in desktop, cloud in web)
     if (FEATURE_FLAGS.TURSO_ENABLED && isTursoConfigured()) {
       return archivePromptInTurso(set, get, id);
     }
@@ -91,7 +91,7 @@ export const usePrompts = create<PromptsState>((set, get) => ({
   },
 
   restorePrompt: async (id, password?: string) => {
-    // Use Turso backend when enabled
+    // Use Turso backend (local SQLite in desktop, cloud in web)
     if (FEATURE_FLAGS.TURSO_ENABLED && isTursoConfigured()) {
       return restorePromptInTurso(set, get, id);
     }

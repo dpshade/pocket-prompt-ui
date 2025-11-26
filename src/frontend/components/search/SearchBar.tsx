@@ -337,7 +337,7 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({ showArch
 
         {booleanExpression && !showBooleanBuilder && (
           <div
-            className="flex items-center gap-2 text-sm cursor-pointer transition-colors border-t border-border pt-3 pb-3 -mx-5 -mb-4 sm:-mx-4 sm:-mb-3 px-9 sm:px-8 bg-muted/50 rounded-b-lg"
+            className="flex items-center gap-2 text-sm cursor-pointer transition-colors border-t border-border pt-3 pb-4 -mx-5 -mb-4 sm:-mx-4 sm:-mb-3 px-9 sm:px-8 bg-muted/50 rounded-b-lg"
             onClick={() => {
               setExpressionText(expressionToString(booleanExpression));
               setShowBooleanBuilder(true);

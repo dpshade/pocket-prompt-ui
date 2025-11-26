@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { HTMLAttributes } from 'react';
 import { ExternalLink, Edit, Archive, ArchiveRestore, Check, Lock, Globe, Info } from 'lucide-react';
 import { Button } from '@/frontend/components/ui/button';
@@ -19,7 +20,7 @@ interface PromptListItemProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'card' | 'pane';
 }
 
-export function PromptListItem({ prompt, isSelected = false, isCopied = false, onView, onEdit, onArchive, onRestore, onCopy, variant = 'card', className, ...rest }: PromptListItemProps) {
+export const PromptListItem = memo(function PromptListItem({ prompt, isSelected = false, isCopied = false, onView, onEdit, onArchive, onRestore, onCopy, variant = 'card', className, ...rest }: PromptListItemProps) {
   const isEncrypted = wasPromptEncrypted(prompt.tags);
   const isPublic = !isEncrypted;
 
@@ -57,7 +58,7 @@ export function PromptListItem({ prompt, isSelected = false, isCopied = false, o
         className,
       )
     : cn(
-        'group relative bg-card rounded-3xl sm:rounded-2xl py-5 px-5 sm:py-4 sm:px-5 transition-all cursor-pointer overflow-hidden shadow-sm md:hover:shadow-lg border border-border',
+        'group relative bg-card rounded-3xl sm:rounded-2xl py-5 px-5 sm:py-4 sm:px-5 cursor-pointer overflow-hidden shadow-sm md:hover:shadow-lg border border-border',
         !isCopied && isSelected ? 'ring-2 ring-primary shadow-lg' : '',
         className,
       );
@@ -266,4 +267,4 @@ export function PromptListItem({ prompt, isSelected = false, isCopied = false, o
       </div>
     </div>
   );
-}
+});

@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import type { DragEvent } from 'react';
-import { Upload, FolderUp, FileText, CheckCircle, AlertCircle, ArrowLeft, AlertTriangle, Copy, Download } from 'lucide-react';
+import { Upload, FolderUp, FileText, CheckCircle, AlertCircle, ArrowLeft, Copy, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/frontend/components/ui/dialog';
 import { Button } from '@/frontend/components/ui/button';
 import { Badge } from '@/frontend/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/frontend/components/ui/tabs';
 import { importMarkdownDirectory, type FileImportResult } from '@/shared/utils/import';
-import { estimatePromptUploadSize, formatBytes, getSizeWarningLevel } from '@/core/validation/fileSize';
 import type { Prompt } from '@/shared/types/prompt';
 
 interface UploadDialogProps {
@@ -59,7 +58,6 @@ export function UploadDialog({ open, onOpenChange, onImport, existingPromptIds, 
   const [isProcessing, setIsProcessing] = useState(false);
   const [preview, setPreview] = useState<FileImportResult[] | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [fileSizes, setFileSizes] = useState<Map<string, number>>(new Map());
   const [duplicateIds, setDuplicateIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('import');
   const [exportSelectedIds, setExportSelectedIds] = useState<Set<string>>(new Set());
@@ -161,7 +159,6 @@ export function UploadDialog({ open, onOpenChange, onImport, existingPromptIds, 
   const resetState = () => {
     setPreview(null);
     setSelectedIds(new Set());
-    setFileSizes(new Map());
     setDuplicateIds(new Set());
     setIsProcessing(false);
     setActiveTab('import');
@@ -171,21 +168,15 @@ export function UploadDialog({ open, onOpenChange, onImport, existingPromptIds, 
     if (folderInputRef.current) folderInputRef.current.value = '';
   };
 
-  // Calculate file sizes and detect duplicates when preview changes
+  // Detect duplicates when preview changes
   useEffect(() => {
     if (!preview) return;
 
-    const calculateSizesAndDuplicates = async () => {
-      const sizeMap = new Map<string, number>();
-
-      // Extract prompts from preview and convert ImportedPrompt to Prompt
+    const detectDuplicates = () => {
+      // Extract prompts from preview
       const importedPrompts: Prompt[] = [];
       for (const result of preview) {
         if (result.success && result.prompt) {
-          // Estimate size (fast, doesn't require wallet connection)
-          const estimatedSize = estimatePromptUploadSize(result.prompt);
-          sizeMap.set(result.prompt.id, estimatedSize);
-
           // Convert ImportedPrompt to Prompt for duplicate detection
           const fullPrompt: Prompt = {
             ...result.prompt,
@@ -199,8 +190,6 @@ export function UploadDialog({ open, onOpenChange, onImport, existingPromptIds, 
           importedPrompts.push(fullPrompt);
         }
       }
-
-      setFileSizes(sizeMap);
 
       // Check for duplicates based on title matching
       if (existingPrompts.length > 0 && importedPrompts.length > 0) {
@@ -225,7 +214,7 @@ export function UploadDialog({ open, onOpenChange, onImport, existingPromptIds, 
       }
     };
 
-    calculateSizesAndDuplicates();
+    detectDuplicates();
   }, [preview, existingPrompts]);
 
   const handleDragEnter = (e: DragEvent) => {
@@ -400,17 +389,6 @@ export function UploadDialog({ open, onOpenChange, onImport, existingPromptIds, 
       p.success && p.prompt && existingPromptIds.includes(p.prompt.id) && selectedIds.has(p.prompt.id)
     ).length;
 
-    // Calculate total size of selected prompts
-    const totalSize = Array.from(selectedIds).reduce((sum, id) => {
-      return sum + (fileSizes.get(id) || 0);
-    }, 0);
-
-    // Count size warnings
-    const oversizedCount = Array.from(selectedIds).filter(id => {
-      const size = fileSizes.get(id) || 0;
-      return size > 102400; // 100 KiB
-    }).length;
-
     return (
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
@@ -438,15 +416,6 @@ export function UploadDialog({ open, onOpenChange, onImport, existingPromptIds, 
             {errorCount > 0 && (
               <Badge variant="destructive">{errorCount} errors</Badge>
             )}
-            <Badge variant="outline" className="bg-muted">
-              Total: {formatBytes(totalSize)}
-            </Badge>
-            {oversizedCount > 0 && (
-              <Badge variant="destructive" className="flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                {oversizedCount} over 100 KiB
-              </Badge>
-            )}
           </div>
 
           {/* Prompt List - Scrollable Content */}
@@ -455,8 +424,6 @@ export function UploadDialog({ open, onOpenChange, onImport, existingPromptIds, 
               const isSelected = result.prompt && selectedIds.has(result.prompt.id);
               const willUpdate = result.prompt && existingPromptIds.includes(result.prompt.id);
               const isPossibleDuplicate = result.prompt && duplicateIds.has(result.prompt.id);
-              const fileSize = result.prompt ? fileSizes.get(result.prompt.id) : undefined;
-              const sizeWarning = fileSize ? getSizeWarningLevel(fileSize) : 'ok';
 
               return (
                 <div
@@ -515,17 +482,6 @@ export function UploadDialog({ open, onOpenChange, onImport, existingPromptIds, 
                               >
                                 <Copy className="h-3 w-3 mr-1" />
                                 Possible duplicate
-                              </Badge>
-                            )}
-                            {fileSize !== undefined && (
-                              <Badge
-                                variant={sizeWarning === 'error' ? 'destructive' : sizeWarning === 'warning' ? 'default' : 'outline'}
-                                className={`text-xs ${sizeWarning === 'warning' ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 border-yellow-500/30' : ''}`}
-                              >
-                                {formatBytes(fileSize)}
-                                {sizeWarning === 'error' && ' (requires credits)'}
-                                {sizeWarning === 'warning' && ' (near limit)'}
-                                {sizeWarning === 'ok' && ' (free)'}
                               </Badge>
                             )}
                           </div>

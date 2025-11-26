@@ -14,6 +14,7 @@ import { PasswordUnlock } from '@/frontend/components/wallet/PasswordUnlock';
 import { ThemeToggle } from '@/frontend/components/shared/ThemeToggle';
 import { TeamsButton } from '@/frontend/components/waitlist/TeamsButton';
 import { TeamsWaitlistModal } from '@/frontend/components/waitlist/TeamsWaitlistModal';
+import { SyncButton } from '@/frontend/components/sync/SyncButton';
 import { MigrationDialog } from '@/frontend/components/migration/MigrationDialog';
 import { getMigrationStatus, type MigrationStatus } from '@/core/migration/arweave-to-turso';
 import { PublicPromptView } from '@/frontend/components/prompts/PublicPromptView';
@@ -513,7 +514,7 @@ function App() {
 
       if (wrappedDown) {
         // Just wrapped from last to first - stay at top (already there from wrap)
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'instant' });
       } else if (wrappedUp || selectedIndex === lastIndex) {
         // Wrapped from first to last, or navigated to last element - scroll to bottom
         const maxScroll = Math.max(
@@ -522,13 +523,13 @@ function App() {
           document.body.offsetHeight,
           document.documentElement.offsetHeight
         );
-        window.scrollTo({ top: maxScroll, behavior: 'smooth' });
+        window.scrollTo({ top: maxScroll, behavior: 'instant' });
       } else if (selectedIndex === 0) {
         // At first element (not from wrap) - scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'instant' });
       } else {
         // Otherwise, scroll element into view
-        selectedElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        selectedElement.scrollIntoView({ behavior: 'instant', block: 'nearest' });
       }
 
       // Update previous index for next comparison
@@ -923,7 +924,14 @@ function App() {
 
             </TooltipProvider>
 
-            {/* Teams waitlist button */}
+            {/* Sync button (desktop app only) */}
+            {FEATURE_FLAGS.SHOW_SYNC_BUTTON && (
+              <div className="hidden sm:block">
+                <SyncButton />
+              </div>
+            )}
+
+            {/* Teams/Packs waitlist button */}
             <div className="hidden sm:block">
               <TeamsButton onClick={() => setTeamsWaitlistOpen(true)} />
             </div>
