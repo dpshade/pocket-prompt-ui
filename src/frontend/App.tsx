@@ -893,12 +893,32 @@ function App() {
       } else {
         // Otherwise, scroll element into view
         selectedElement.scrollIntoView({ behavior: 'instant', block: 'nearest' });
+
+        const rect = selectedElement.getBoundingClientRect();
+        const headerHeight = 100; // Approximate height of sticky header + padding
+
+        // Check if element is behind the header (at top)
+        if (rect.top < headerHeight) {
+          const scrollAmount = rect.top - headerHeight - 20; // 20px extra padding, negative to scroll up
+          window.scrollBy({ top: scrollAmount, behavior: 'instant' });
+        }
+        // If floating search bar is visible (desktop, scrolled down), ensure element isn't behind it
+        else if (!isSearchBarVisible && window.innerWidth >= 640) {
+          const floatingSearchBarHeight = 160; // Approximate height of floating search bar + padding
+          const viewportBottom = window.innerHeight - floatingSearchBarHeight;
+
+          // If element bottom is below the visible area (behind floating search bar), scroll more
+          if (rect.bottom > viewportBottom) {
+            const scrollAmount = rect.bottom - viewportBottom + 20; // 20px extra padding
+            window.scrollBy({ top: scrollAmount, behavior: 'instant' });
+          }
+        }
       }
 
       // Update previous index for next comparison
       previousIndexRef.current = selectedIndex;
     }
-  }, [selectedIndex, filteredPrompts.length]);
+  }, [selectedIndex, filteredPrompts.length, isSearchBarVisible]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -1328,7 +1348,9 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="space-y-2 px-4 pt-6 pb-[calc(11rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-10 sm:pb-12 lg:px-10">
+      <main className={`space-y-2 px-4 pt-6 pb-[calc(11rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-10 lg:px-10 ${
+        !isSearchBarVisible ? 'sm:pb-48' : 'sm:pb-12'
+      }`}>
         <section className="mx-auto flex max-w-6xl flex-col gap-4">
           {/* Desktop SearchBar - hidden on mobile, becomes fixed when scrolled past */}
           <div ref={desktopSearchBarContainerRef} className="hidden sm:block">
