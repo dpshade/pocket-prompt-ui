@@ -181,7 +181,7 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({ showArch
   const duplicateCount = getDuplicateCount(prompts);
 
   return (
-    <div className="space-y-4">
+    <>
       <div className="border border-border bg-card rounded-lg relative px-5 py-4 sm:px-4 sm:py-3 space-y-3 shadow-sm">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 sm:left-3 top-1/2 h-5 w-5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
@@ -402,6 +402,6 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({ showArch
         duplicateCount={duplicateCount}
         collections={collections}
       />
-    </div>
+    </>
   );
 });

@@ -16,7 +16,9 @@
   },
   "dependencies": {
     "@ardrive/turbo-sdk": "^1.31.1",
+    "@libsql/client": "^0.15.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@vela-ventures/ao-sync-sdk": "^1.1.33",
     "arweave": "^1.15.7",
@@ -27,6 +29,7 @@
     "graphql": "^16.11.0",
     "graphql-request": "^7.2.0",
     "gray-matter": "^4.0.3",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

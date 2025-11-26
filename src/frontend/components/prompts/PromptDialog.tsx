@@ -1,10 +1,12 @@
-import { Copy, Edit, Archive, History, Check, Lock, Globe } from 'lucide-react';
+import { Copy, Edit, Archive, History, Check, Lock, Globe, Share2, Link, Loader2, X } from 'lucide-react';
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/frontend/components/ui/dialog';
 import { Button } from '@/frontend/components/ui/button';
 import { Badge } from '@/frontend/components/ui/badge';
 import type { Prompt } from '@/shared/types/prompt';
 import { useState, useEffect } from 'react';
 import { wasPromptEncrypted } from '@/core/encryption/crypto';
+import { FEATURE_FLAGS } from '@/shared/config/features';
+import * as tursoQueries from '@/backend/api/turso-queries';
 
 interface PromptDialogProps {
   open: boolean;
@@ -24,6 +26,62 @@ export function PromptDialog({
   onShowVersions,
 }: PromptDialogProps) {
   const [copied, setCopied] = useState(false);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareLinkCopied, setShareLinkCopied] = useState(false);
+
+  // Fetch share token when dialog opens
+  useEffect(() => {
+    if (open && prompt && FEATURE_FLAGS.TURSO_ENABLED) {
+      tursoQueries.getShareToken(prompt.id).then(setShareToken);
+    }
+  }, [open, prompt]);
+
+  // Reset share state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setShareToken(null);
+      setShareLinkCopied(false);
+    }
+  }, [open]);
+
+  const handleShare = async () => {
+    if (!prompt || !FEATURE_FLAGS.TURSO_ENABLED) return;
+
+    setIsSharing(true);
+    try {
+      const token = await tursoQueries.generateShareToken(prompt.id);
+      setShareToken(token);
+      // Copy the share link to clipboard
+      const shareUrl = `${window.location.origin}?share=${token}`;
+      await navigator.clipboard.writeText(shareUrl);
+      setShareLinkCopied(true);
+      setTimeout(() => setShareLinkCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to generate share link:', error);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleCopyShareLink = async () => {
+    if (!shareToken) return;
+    const shareUrl = `${window.location.origin}?share=${shareToken}`;
+    await navigator.clipboard.writeText(shareUrl);
+    setShareLinkCopied(true);
+    setTimeout(() => setShareLinkCopied(false), 2000);
+  };
+
+  const handleUnshare = async () => {
+    if (!prompt || !FEATURE_FLAGS.TURSO_ENABLED) return;
+
+    try {
+      await tursoQueries.removeShareToken(prompt.id);
+      setShareToken(null);
+    } catch (error) {
+      console.error('Failed to remove share link:', error);
+    }
+  };
 
   // Check if prompt has version history based on the latest version number
   const hasVersionHistory = (prompt: Prompt | null) => {
@@ -125,25 +183,47 @@ export function PromptDialog({
               )}
 
             <div className="flex flex-wrap items-center gap-2">
-                <Badge
-                  variant={isEncrypted ? 'default' : 'secondary'}
-                  className="flex items-center gap-1.5 px-3 py-1 text-xs"
-                  title={isEncrypted
-                    ? 'This prompt is encrypted. Only your wallet can decrypt it.'
-                    : 'This prompt is public. Anyone can read it on Arweave.'}
-                >
-                  {isPublic ? (
-                    <>
-                      <Globe className="h-3.5 w-3.5" />
-                      Public
-                    </>
+                {FEATURE_FLAGS.TURSO_ENABLED ? (
+                  shareToken ? (
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-1.5 px-3 py-1 text-xs bg-green-500/15 text-green-700 dark:text-green-400"
+                      title="This prompt has a shareable link"
+                    >
+                      <Link className="h-3.5 w-3.5" />
+                      Shared
+                    </Badge>
                   ) : (
-                    <>
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-1.5 px-3 py-1 text-xs"
+                      title="This prompt is private"
+                    >
                       <Lock className="h-3.5 w-3.5" />
-                      Encrypted
-                    </>
-                  )}
-                </Badge>
+                      Private
+                    </Badge>
+                  )
+                ) : (
+                  <Badge
+                    variant={isEncrypted ? 'default' : 'secondary'}
+                    className="flex items-center gap-1.5 px-3 py-1 text-xs"
+                    title={isEncrypted
+                      ? 'This prompt is encrypted. Only your wallet can decrypt it.'
+                      : 'This prompt is public. Anyone can read it on Arweave.'}
+                  >
+                    {isPublic ? (
+                      <>
+                        <Globe className="h-3.5 w-3.5" />
+                        Public
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="h-3.5 w-3.5" />
+                        Encrypted
+                      </>
+                    )}
+                  </Badge>
+                )}
                 {hasVersionHistory(prompt) && (
                   <Badge variant="outline" className="px-3 py-1 text-xs">
                     v{prompt.versions[prompt.versions.length - 1]?.version}
@@ -209,6 +289,62 @@ export function PromptDialog({
               </>
             )}
           </Button>
+
+          {/* Share button - only show for Turso mode */}
+          {FEATURE_FLAGS.TURSO_ENABLED && (
+            shareToken ? (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  onClick={handleCopyShareLink}
+                  size="sm"
+                  className="gap-2"
+                  title="Copy share link"
+                >
+                  {shareLinkCopied ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      <span className="hidden sm:inline">Link Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Link className="h-4 w-4" />
+                      <span className="hidden sm:inline">Copy Link</span>
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={handleUnshare}
+                  size="sm"
+                  className="px-2 text-muted-foreground hover:text-destructive"
+                  title="Remove share link"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={handleShare}
+                disabled={isSharing}
+                size="sm"
+                className="gap-2"
+              >
+                {isSharing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="hidden sm:inline">Sharing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Share</span>
+                  </>
+                )}
+              </Button>
+            )
+          )}
 
           {hasVersionHistory(prompt) && (
             <Button

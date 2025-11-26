@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Plus, Archive as ArchiveIcon, Upload, Copy, Bell } from 'lucide-react';
+import { Plus, Archive as ArchiveIcon, Upload, Copy } from 'lucide-react';
 import { WalletButton } from '@/frontend/components/wallet/WalletButton';
 import { SearchBar, type SearchBarHandle } from '@/frontend/components/search/SearchBar';
 import { PromptCard } from '@/frontend/components/prompts/PromptCard';
@@ -8,23 +8,26 @@ import { PromptDialog } from '@/frontend/components/prompts/PromptDialog';
 import { PromptEditor } from '@/frontend/components/prompts/PromptEditor';
 import { VersionHistory } from '@/frontend/components/prompts/VersionHistory';
 import { UploadDialog } from '@/frontend/components/shared/UploadDialog';
-import { NotificationsDialog } from '@/frontend/components/shared/NotificationsDialog';
 import { MobileMenu } from '@/frontend/components/shared/MobileMenu';
 import { PasswordPrompt } from '@/frontend/components/wallet/PasswordPrompt';
 import { PasswordUnlock } from '@/frontend/components/wallet/PasswordUnlock';
 import { ThemeToggle } from '@/frontend/components/shared/ThemeToggle';
+import { TeamsButton } from '@/frontend/components/waitlist/TeamsButton';
+import { TeamsWaitlistModal } from '@/frontend/components/waitlist/TeamsWaitlistModal';
+import { MigrationDialog } from '@/frontend/components/migration/MigrationDialog';
+import { getMigrationStatus, type MigrationStatus } from '@/core/migration/arweave-to-turso';
 import { PublicPromptView } from '@/frontend/components/prompts/PublicPromptView';
+import { TursoSharedPromptView } from '@/frontend/components/prompts/TursoSharedPromptView';
 import { Button } from '@/frontend/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/frontend/components/ui/tooltip';
 import { useWallet } from '@/frontend/hooks/useWallet';
+import { useIdentity } from '@/frontend/hooks/useIdentity';
 import { usePrompts } from '@/frontend/hooks/usePrompts';
 import { usePassword } from '@/frontend/contexts/PasswordContext';
+import { FEATURE_FLAGS } from '@/shared/config/features';
 import { useInitializeTheme } from '@/frontend/hooks/useTheme';
 import { useCollections } from '@/frontend/hooks/useCollections';
-import { useNotifications } from '@/frontend/hooks/useNotifications';
 import { getArweaveWallet } from '@/backend/api/client';
-import { isTransactionConfirmed } from '@/backend/api/collections';
-import { Badge } from '@/frontend/components/ui/badge';
 import type { Prompt, PromptVersion } from '@/shared/types/prompt';
 import { searchPrompts } from '@/core/search';
 import { evaluateExpression, expressionToString } from '@/core/search/boolean';
@@ -38,14 +41,36 @@ import { parseDeepLink, updateDeepLink, urlParamToExpression } from '@/frontend/
 function App() {
   useInitializeTheme();
 
+  // Initialize device identity for Turso mode
+  const identity = useIdentity();
+
+  // Auto-initialize identity when Turso is enabled
+  useEffect(() => {
+    if (FEATURE_FLAGS.TURSO_ENABLED && !identity.connected && !identity.connecting) {
+      identity.initialize();
+    }
+  }, [identity]);
+
   // Check for public prompt viewing (txid parameter) - no wallet required
   const [publicTxId, setPublicTxId] = useState<string | null>(() => {
     const params = parseDeepLink();
     return params.txid || null;
   });
 
-  const { address, connected } = useWallet();
-  const { password, setPassword, hasPassword, setWalletAddress, isLoadingPassword } = usePassword();
+  // Check for Turso shared prompt viewing (share parameter) - no wallet required
+  const [shareToken, setShareToken] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('share') || null;
+  });
+
+  const { address, connected: walletConnected } = useWallet();
+
+  // Use identity connection for Turso, wallet for Arweave
+  const connected = FEATURE_FLAGS.TURSO_ENABLED ? identity.connected : walletConnected;
+  const { password, setPassword, hasPassword: hasPasswordFromContext, setWalletAddress, isLoadingPassword } = usePassword();
+
+  // When encryption is disabled, treat as always having password
+  const hasPassword = FEATURE_FLAGS.ENCRYPTION_ENABLED ? hasPasswordFromContext : true;
 
   // Update password context when wallet address changes
   useEffect(() => {
@@ -63,7 +88,6 @@ function App() {
     updatePrompt,
     archivePrompt,
     restorePrompt,
-    setUploadCallbacks,
     setSearchQuery,
     setBooleanExpression,
     loadSavedSearch,
@@ -72,64 +96,18 @@ function App() {
   // Collections management with Arweave sync
   const arweaveWallet = getArweaveWallet();
 
-  // Notifications for Arweave uploads
-  const notifications = useNotifications(address, isTransactionConfirmed);
+  // Collection callbacks (no-op for Turso mode)
+  const handleCollectionUploadStart = useCallback((_txId: string, _count: number) => {
+    // No-op for Turso mode
+  }, []);
 
-  // Notification callbacks for collections
-  const handleCollectionUploadStart = useCallback((txId: string, count: number) => {
-    notifications.addNotification(
-      'collection',
-      txId,
-      'Collections uploaded',
-      `Syncing ${count} collection${count === 1 ? '' : 's'} to Arweave`
-    );
-  }, [notifications]);
-
-  const handleCollectionUploadComplete = useCallback((txId: string) => {
-    notifications.markAsConfirmed(txId);
-  }, [notifications]);
+  const handleCollectionUploadComplete = useCallback((_txId: string) => {
+    // No-op for Turso mode
+  }, []);
 
   const handleCollectionUploadError = useCallback((error: string) => {
     console.error('[App] Collections upload error:', error);
   }, []);
-
-  // Use refs to avoid re-registering callbacks on every render
-  const uploadCallbacksRef = useRef({
-    onStart: (txId: string, title: string) => {
-      notifications.addNotification(
-        'prompt',
-        txId,
-        'Prompt uploaded',
-        `Syncing "${title}" to Arweave`
-      );
-    },
-    onComplete: (txId: string) => {
-      notifications.markAsConfirmed(txId);
-    },
-  });
-
-  // Update ref when notifications change (doesn't trigger re-render)
-  uploadCallbacksRef.current = {
-    onStart: (txId: string, title: string) => {
-      notifications.addNotification(
-        'prompt',
-        txId,
-        'Prompt uploaded',
-        `Syncing "${title}" to Arweave`
-      );
-    },
-    onComplete: (txId: string) => {
-      notifications.markAsConfirmed(txId);
-    },
-  };
-
-  // Set up prompt upload callbacks (only once on mount)
-  useEffect(() => {
-    setUploadCallbacks(
-      (txId, title) => uploadCallbacksRef.current.onStart(txId, title),
-      (txId) => uploadCallbacksRef.current.onComplete(txId)
-    );
-  }, [setUploadCallbacks]); // Only depends on setUploadCallbacks (stable)
 
   const collections = useCollections(
     address,
@@ -147,7 +125,6 @@ function App() {
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [notificationsDialogOpen, setNotificationsDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(() => getViewMode());
   const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
   const [passwordUnlockOpen, setPasswordUnlockOpen] = useState(false);
@@ -159,6 +136,10 @@ function App() {
   const previousIndexRef = useRef<number>(0);
   const passwordCheckDone = useRef(false);
   const [showFloatingNewButton, setShowFloatingNewButton] = useState(false);
+  const [teamsWaitlistOpen, setTeamsWaitlistOpen] = useState(false);
+  const [migrationDialogOpen, setMigrationDialogOpen] = useState(false);
+  const [migrationStatus, setMigrationStatus] = useState<MigrationStatus | null>(null);
+  const migrationCheckDone = useRef(false);
   const newPromptButtonRef = useRef<HTMLButtonElement>(null);
 
   // Track grid columns for keyboard navigation
@@ -260,7 +241,7 @@ function App() {
 
   // Blur search input when any dialog opens
   useEffect(() => {
-    const anyDialogOpen = viewDialogOpen || editorOpen || versionHistoryOpen || uploadDialogOpen || passwordPromptOpen || passwordUnlockOpen || notificationsDialogOpen;
+    const anyDialogOpen = viewDialogOpen || editorOpen || versionHistoryOpen || uploadDialogOpen || passwordPromptOpen || passwordUnlockOpen;
 
     if (anyDialogOpen) {
       const activeElement = document.activeElement as HTMLElement;
@@ -268,7 +249,7 @@ function App() {
         activeElement.blur();
       }
     }
-  }, [viewDialogOpen, editorOpen, versionHistoryOpen, uploadDialogOpen, passwordPromptOpen, passwordUnlockOpen, notificationsDialogOpen]);
+  }, [viewDialogOpen, editorOpen, versionHistoryOpen, uploadDialogOpen, passwordPromptOpen, passwordUnlockOpen]);
 
   const toggleViewMode = () => {
     const newMode = viewMode === 'list' ? 'cards' : 'list';
@@ -297,6 +278,13 @@ function App() {
   // Determine which password dialog to show when wallet connects
   useEffect(() => {
     const checkForEncryptedPrompts = async () => {
+      // Skip password checks when encryption is disabled
+      if (!FEATURE_FLAGS.ENCRYPTION_ENABLED) {
+        console.log('[App] Encryption disabled, skipping password checks');
+        passwordCheckDone.current = true;
+        return;
+      }
+
       console.log('[App] checkForEncryptedPrompts:', {
         connected,
         isLoadingPassword,
@@ -386,12 +374,37 @@ function App() {
     checkForEncryptedPrompts();
   }, [connected, hasPassword, isLoadingPassword, address]);
 
-  // Load prompts after password is set
+  // Check for migration when using Turso
   useEffect(() => {
-    if (connected && hasPassword) {
+    if (!FEATURE_FLAGS.TURSO_ENABLED || !connected || migrationCheckDone.current) return;
+
+    migrationCheckDone.current = true;
+    const status = getMigrationStatus();
+    setMigrationStatus(status);
+
+    // Show migration dialog if:
+    // - Has cached prompts
+    // - Not already migrated
+    // - Not already attempted (skipped)
+    if (status.hasCachedPrompts && !status.alreadyMigrated && !status.migrationAttempted) {
+      setMigrationDialogOpen(true);
+    } else {
+      // No migration needed, load prompts normally
+      loadPrompts();
+    }
+  }, [connected, loadPrompts]);
+
+  // Load prompts after password is set (Arweave mode)
+  useEffect(() => {
+    if (!FEATURE_FLAGS.TURSO_ENABLED && connected && hasPassword) {
       loadPrompts(password || undefined);
     }
   }, [connected, hasPassword, password, loadPrompts]);
+
+  const handleMigrationComplete = () => {
+    // Reload prompts from Turso after migration
+    loadPrompts();
+  };
 
   const handlePasswordSet = (newPassword: string) => {
     setPassword(newPassword);
@@ -763,6 +776,13 @@ function App() {
     window.history.replaceState({}, '', url.pathname);
   };
 
+  const handleExitSharedView = () => {
+    setShareToken(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('share');
+    window.history.replaceState({}, '', url.pathname + url.search);
+  };
+
   const handleBatchImport = async (selectedPrompts: FileImportResult[]) => {
     let imported = 0;
     let updated = 0;
@@ -821,12 +841,38 @@ function App() {
     alert(message);
   };
 
-  // Public prompt view (no wallet required)
+  // Turso shared prompt view (no authentication required)
+  if (shareToken && FEATURE_FLAGS.TURSO_ENABLED) {
+    return <TursoSharedPromptView shareToken={shareToken} onBack={handleExitSharedView} />;
+  }
+
+  // Public prompt view (no wallet required) - for Arweave public prompts
   if (publicTxId) {
     return <PublicPromptView txId={publicTxId} onBack={handleExitPublicView} />;
   }
 
   if (!connected) {
+    // Turso mode: show loading spinner while initializing
+    if (FEATURE_FLAGS.TURSO_ENABLED) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <div className="text-center space-y-6 max-w-md">
+            <div className="relative inline-block">
+              <div className="animate-spin inline-block w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full" role="status">
+                <span className="sr-only">Loading...</span>
+              </div>
+              <img src="/logo.svg" alt="Pocket Prompt Logo" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-5 w-5 animate-pulse" />
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold">Pocket Prompt</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
+              Setting up your prompt library...
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Arweave mode: show wallet connect
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="text-center space-y-6 max-w-md">
@@ -875,49 +921,25 @@ function App() {
                 </TooltipContent>
               </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => {
-                      setNotificationsDialogOpen(true);
-                      notifications.markAllAsRead();
-                    }}
-                    className="relative hidden sm:flex h-10 w-10 rounded-full"
-                  >
-                    <Bell className="h-4 w-4" />
-                    {notifications.unreadCount > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
-                      >
-                        {notifications.unreadCount > 9 ? '9+' : notifications.unreadCount}
-                      </Badge>
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Arweave Notifications</p>
-                </TooltipContent>
-              </Tooltip>
             </TooltipProvider>
+
+            {/* Teams waitlist button */}
+            <div className="hidden sm:block">
+              <TeamsButton onClick={() => setTeamsWaitlistOpen(true)} />
+            </div>
 
             {/* Desktop theme toggle */}
             <div className="hidden sm:block">
               <ThemeToggle />
             </div>
 
-            <WalletButton onSetPassword={() => setPasswordPromptOpen(true)} />
+            {FEATURE_FLAGS.WALLET_CONNECTION && (
+              <WalletButton onSetPassword={() => setPasswordPromptOpen(true)} />
+            )}
 
             {/* Mobile menu - shown only on mobile */}
             <MobileMenu
               onUploadClick={() => setUploadDialogOpen(true)}
-              onNotificationsClick={() => {
-                setNotificationsDialogOpen(true);
-                notifications.markAllAsRead();
-              }}
-              unreadCount={notifications.unreadCount}
             />
           </div>
         </div>
@@ -1089,14 +1111,6 @@ function App() {
         existingPrompts={prompts}
       />
 
-      <NotificationsDialog
-        open={notificationsDialogOpen}
-        onOpenChange={setNotificationsDialogOpen}
-        notifications={notifications.notifications}
-        onClear={notifications.clearNotification}
-        onClearAll={notifications.clearAll}
-      />
-
       <PasswordPrompt
         open={passwordPromptOpen}
         onPasswordSet={handlePasswordSet}
@@ -1109,6 +1123,20 @@ function App() {
         onPasswordUnlock={handlePasswordUnlock}
         onCancel={() => setPasswordUnlockOpen(false)}
       />
+
+      <TeamsWaitlistModal
+        open={teamsWaitlistOpen}
+        onOpenChange={setTeamsWaitlistOpen}
+      />
+
+      {migrationStatus && (
+        <MigrationDialog
+          open={migrationDialogOpen}
+          onOpenChange={setMigrationDialogOpen}
+          status={migrationStatus}
+          onComplete={handleMigrationComplete}
+        />
+      )}
     </div>
   );
 }
