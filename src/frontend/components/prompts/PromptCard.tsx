@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { ExternalLink, Edit, Archive, ArchiveRestore, Check, Lock, Globe, Info } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/frontend/components/ui/card';
 import { Button } from '@/frontend/components/ui/button';
@@ -8,21 +9,20 @@ import { wasPromptEncrypted } from '@/core/encryption/crypto';
 
 interface PromptCardProps {
   prompt: Prompt;
-  isSelected?: boolean;
   isCopied?: boolean;
-  onView: () => void;
-  onEdit: () => void;
-  onArchive: () => void;
-  onRestore: () => void;
-  onCopy: () => void;
+  onView: (id: string) => void;
+  onEdit: (id: string) => void;
+  onArchive: (id: string) => void;
+  onRestore: (id: string) => void;
+  onCopyPrompt: (id: string) => void;
 }
 
-export function PromptCard({ prompt, isSelected = false, isCopied = false, onView, onEdit, onArchive, onRestore, onCopy }: PromptCardProps) {
+export const PromptCard = memo(function PromptCard({ prompt, isCopied = false, onView, onEdit, onArchive, onRestore, onCopyPrompt }: PromptCardProps) {
   const isEncrypted = wasPromptEncrypted(prompt.tags);
   const isPublic = !isEncrypted;
 
   const handleCopy = () => {
-    onCopy();
+    onCopyPrompt(prompt.id);
   };
 
   const formatDateTime = (timestamp: number) => {
@@ -48,7 +48,7 @@ export function PromptCard({ prompt, isSelected = false, isCopied = false, onVie
 
   return (
     <Card
-      className={`group cursor-pointer md:hover:shadow-lg md:hover:-translate-y-1 transition-all duration-200 active:scale-[0.98] h-[240px] flex flex-col relative ${!isCopied && isSelected ? 'ring-2 ring-primary shadow-lg -translate-y-1' : ''}`}
+      className="group cursor-pointer md:hover:shadow-lg md:hover:-translate-y-1 transition-all duration-200 active:scale-[0.98] h-[240px] flex flex-col relative [[data-selected='true']>&]:ring-2 [[data-selected='true']>&]:ring-primary [[data-selected='true']>&]:shadow-lg [[data-selected='true']>&]:-translate-y-1"
       onClick={handleCopy}
       title="Click to copy"
     >
@@ -123,7 +123,7 @@ export function PromptCard({ prompt, isSelected = false, isCopied = false, onVie
                 variant="outline"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onView();
+                  onView(prompt.id);
                 }}
                 className="md:hover:scale-110 active:scale-90 transition-transform h-8 w-8 md:h-7 md:w-auto"
               >
@@ -144,7 +144,7 @@ export function PromptCard({ prompt, isSelected = false, isCopied = false, onVie
                     variant="outline"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onEdit();
+                      onEdit(prompt.id);
                     }}
                     className="md:hover:scale-110 active:scale-90 transition-transform h-8 w-8 md:h-7 md:w-auto"
                   >
@@ -163,7 +163,7 @@ export function PromptCard({ prompt, isSelected = false, isCopied = false, onVie
                     variant="outline"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onArchive();
+                      onArchive(prompt.id);
                     }}
                     className="md:hover:scale-110 active:scale-90 transition-transform h-8 w-8 md:h-7 md:w-auto"
                   >
@@ -183,7 +183,7 @@ export function PromptCard({ prompt, isSelected = false, isCopied = false, onVie
                   variant="outline"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onRestore();
+                    onRestore(prompt.id);
                   }}
                   className="md:hover:scale-110 active:scale-90 transition-transform animate-wiggle h-8 w-8 md:h-7 md:w-auto"
                 >
@@ -233,4 +233,4 @@ export function PromptCard({ prompt, isSelected = false, isCopied = false, onVie
       </CardFooter>
     </Card>
   );
-}
+});

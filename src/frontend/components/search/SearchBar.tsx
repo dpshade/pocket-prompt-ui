@@ -6,7 +6,7 @@ import { SavedSearchesDialog } from '@/frontend/components/search/SavedSearchesD
 import { usePrompts } from '@/frontend/hooks/usePrompts';
 import { getAllTags } from '@/core/search';
 import { expressionToString, parseBooleanExpression } from '@/core/search/boolean';
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback, startTransition } from 'react';
 import type { BooleanExpression, SavedSearch } from '@/shared/types/prompt';
 import type { UseCollectionsReturn } from '@/frontend/hooks/useCollections';
 import { BooleanBuilder } from '@/frontend/components/search/BooleanBuilder';
@@ -48,6 +48,47 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({ showArch
   const [expressionText, setExpressionText] = useState('');
   const [savedSearchesDialogOpen, setSavedSearchesDialogOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Local input state for instant feedback, debounced to global store
+  const [inputValue, setInputValue] = useState(searchQuery);
+
+  // Sync input value when searchQuery changes externally (e.g., from saved search)
+  useEffect(() => {
+    setInputValue(searchQuery);
+  }, [searchQuery]);
+
+  // Debounced search update with startTransition for non-blocking updates
+  const debouncedSetSearchQuery = useCallback((value: string) => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      // Use startTransition to mark this as a non-urgent update
+      // This allows React to yield to more urgent updates (like typing)
+      startTransition(() => {
+        setSearchQuery(value);
+      });
+    }, 30); // 30ms debounce with startTransition for instant-feeling search
+  }, [setSearchQuery]);
+
+  // Handle input change with debouncing
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value); // Instant local update
+    debouncedSetSearchQuery(value); // Debounced global update
+  }, [debouncedSetSearchQuery]);
+
+  // Clear input
+  const handleClearInput = useCallback(() => {
+    setInputValue('');
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    startTransition(() => {
+      setSearchQuery('');
+    });
+  }, [setSearchQuery]);
 
   // Inline autocomplete state
   const [inlineSuggestion, setInlineSuggestion] = useState('');
@@ -72,7 +113,7 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({ showArch
     searchInputRef.current?.focus();
   }, []);
 
-  // Update inline suggestion when search query or cursor position changes
+  // Update inline suggestion when input value or cursor position changes
   useEffect(() => {
     if (!searchInputRef.current) {
       setInlineSuggestion('');
@@ -83,12 +124,12 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({ showArch
     const cursorPos = input.selectionStart || 0;
 
     // Only show suggestion if cursor is at the end of the text
-    if (cursorPos !== searchQuery.length) {
+    if (cursorPos !== inputValue.length) {
       setInlineSuggestion('');
       return;
     }
 
-    const textBeforeCursor = searchQuery.slice(0, cursorPos);
+    const textBeforeCursor = inputValue.slice(0, cursorPos);
     const lastHashIndex = textBeforeCursor.lastIndexOf('#');
 
     if (lastHashIndex !== -1) {
@@ -111,13 +152,14 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({ showArch
     }
 
     setInlineSuggestion('');
-  }, [searchQuery, allTags]);
+  }, [inputValue, allTags]);
 
   // Handle inline autocomplete acceptance
   const acceptInlineSuggestion = () => {
     if (!inlineSuggestion || !searchInputRef.current) return;
 
-    const newQuery = searchQuery + inlineSuggestion + ' ';
+    const newQuery = inputValue + inlineSuggestion + ' ';
+    setInputValue(newQuery);
     setSearchQuery(newQuery);
     setInlineSuggestion('');
 
@@ -195,7 +237,7 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({ showArch
                 fontFamily: 'inherit'
               }}
             >
-              <span className="invisible">{searchQuery}</span>{inlineSuggestion}
+              <span className="invisible">{inputValue}</span>{inlineSuggestion}
             </div>
           )}
 
@@ -203,15 +245,15 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({ showArch
             ref={searchInputRef}
             type="text"
             placeholder={booleanExpression ? 'Additional text filter…' : 'Search prompts…'}
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
+            value={inputValue}
+            onChange={handleInputChange}
             onKeyDown={handleInlineAutocompleteKeyDown}
             className="h-11 sm:h-9 w-full border-0 bg-transparent pl-11 sm:pl-10 pr-24 sm:pr-20 text-base sm:text-sm focus-visible:ring-0 py-0"
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-            {searchQuery && (
+            {inputValue && (
               <button
-                onClick={() => setSearchQuery('')}
+                onClick={handleClearInput}
                 className="rounded-full p-1.5 sm:p-1 text-muted-foreground transition-all hover:text-foreground active:scale-95"
                 title="Clear search"
               >

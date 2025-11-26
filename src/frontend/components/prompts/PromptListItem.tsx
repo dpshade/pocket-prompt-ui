@@ -10,22 +10,22 @@ import { cn } from '@/shared/utils/cn';
 
 interface PromptListItemProps extends HTMLAttributes<HTMLDivElement> {
   prompt: Prompt;
-  isSelected?: boolean;
   isCopied?: boolean;
-  onView: () => void;
-  onEdit: () => void;
-  onArchive: () => void;
-  onRestore: () => void;
-  onCopy: () => void;
+  onView: (id: string) => void;
+  onEdit: (id: string) => void;
+  onArchive: (id: string) => void;
+  onRestore: (id: string) => void;
+  onCopyPrompt: (id: string) => void;
   variant?: 'card' | 'pane';
+  'data-selected'?: boolean;
 }
 
-export const PromptListItem = memo(function PromptListItem({ prompt, isSelected = false, isCopied = false, onView, onEdit, onArchive, onRestore, onCopy, variant = 'card', className, ...rest }: PromptListItemProps) {
+export const PromptListItem = memo(function PromptListItem({ prompt, isCopied = false, onView, onEdit, onArchive, onRestore, onCopyPrompt, variant = 'card', className, 'data-selected': isSelected = false, ...rest }: PromptListItemProps) {
   const isEncrypted = wasPromptEncrypted(prompt.tags);
   const isPublic = !isEncrypted;
 
   const handleCopy = () => {
-    onCopy();
+    onCopyPrompt(prompt.id);
   };
 
   const formatDateTime = (timestamp: number) => {
@@ -156,7 +156,7 @@ export const PromptListItem = memo(function PromptListItem({ prompt, isSelected 
                 variant="ghost"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onView();
+                  onView(prompt.id);
                 }}
                 className="h-9 flex-1 sm:flex-initial sm:h-10 sm:w-10 md:h-8 md:w-8 p-0 active:scale-95 transition-transform"
               >
@@ -177,7 +177,7 @@ export const PromptListItem = memo(function PromptListItem({ prompt, isSelected 
                     variant="ghost"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onEdit();
+                      onEdit(prompt.id);
                     }}
                     className="h-9 flex-1 sm:flex-initial sm:h-10 sm:w-10 md:h-8 md:w-8 p-0 active:scale-95 transition-transform"
                   >
@@ -196,7 +196,7 @@ export const PromptListItem = memo(function PromptListItem({ prompt, isSelected 
                     variant="ghost"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onArchive();
+                      onArchive(prompt.id);
                     }}
                     className="h-9 flex-1 sm:flex-initial sm:h-10 sm:w-10 md:h-8 md:w-8 p-0 active:scale-95 transition-transform"
                   >
@@ -216,7 +216,7 @@ export const PromptListItem = memo(function PromptListItem({ prompt, isSelected 
                   variant="ghost"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onRestore();
+                    onRestore(prompt.id);
                   }}
                   className="h-9 flex-1 sm:flex-initial sm:h-10 sm:w-10 md:h-8 md:w-8 p-0 active:scale-95 transition-transform"
                 >

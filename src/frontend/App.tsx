@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Plus, Archive as ArchiveIcon, Upload, Copy } from 'lucide-react';
 import { WalletButton } from '@/frontend/components/wallet/WalletButton';
 import { SearchBar, type SearchBarHandle } from '@/frontend/components/search/SearchBar';
@@ -418,59 +418,58 @@ function App() {
     setSampleEncryptedData(null);
   };
 
-  // Filter prompts based on search and tags
-  // Get search results with scores for sorting
-  const searchResults = searchQuery ? searchPrompts(searchQuery) : [];
-  const searchScoreMap = new Map(searchResults.map(r => [r.id, r.score]));
+  // Filter prompts based on search and tags (memoized for performance)
+  const filteredPrompts = useMemo(() => {
+    // Get search results with scores for sorting
+    const searchResults = searchQuery ? searchPrompts(searchQuery) : [];
+    const searchScoreMap = new Map(searchResults.map(r => [r.id, r.score]));
 
-  const filteredPrompts = prompts
-    .filter(prompt => {
-      // Archive filter - mutually exclusive
-      if (showArchived) {
-        // Only show archived prompts
-        if (!prompt.isArchived) return false;
-      } else {
-        // Only show non-archived prompts
-        if (prompt.isArchived) return false;
-      }
+    // Pre-compute duplicate IDs once if needed
+    const duplicateIds = showDuplicates
+      ? new Set(findDuplicates(prompts).flatMap(group => group.prompts.map(p => p.id)))
+      : null;
 
-      // Duplicate filter
-      if (showDuplicates) {
-        const duplicateGroups = findDuplicates(prompts);
-        const duplicateIds = new Set(
-          duplicateGroups.flatMap(group => group.prompts.map(p => p.id))
-        );
-        if (!duplicateIds.has(prompt.id)) return false;
-      }
+    return prompts
+      .filter(prompt => {
+        // Archive filter - mutually exclusive
+        if (showArchived) {
+          if (!prompt.isArchived) return false;
+        } else {
+          if (prompt.isArchived) return false;
+        }
 
-      // Boolean expression filter (takes precedence over simple tag filter)
-      if (booleanExpression) {
-        if (!evaluateExpression(booleanExpression, prompt.tags)) return false;
-      } else if (selectedTags.length > 0) {
-        // Simple tag filter (only applies if no boolean expression)
-        const hasAllTags = selectedTags.every(tag =>
-          prompt.tags.some(t => t.toLowerCase() === tag.toLowerCase())
-        );
-        if (!hasAllTags) return false;
-      }
+        // Duplicate filter
+        if (duplicateIds && !duplicateIds.has(prompt.id)) return false;
 
-      // Text search filter (works with both boolean and simple tag filters)
-      if (searchQuery) {
-        if (!searchScoreMap.has(prompt.id)) return false;
-      }
+        // Boolean expression filter (takes precedence over simple tag filter)
+        if (booleanExpression) {
+          if (!evaluateExpression(booleanExpression, prompt.tags)) return false;
+        } else if (selectedTags.length > 0) {
+          // Simple tag filter (only applies if no boolean expression)
+          const hasAllTags = selectedTags.every(tag =>
+            prompt.tags.some(t => t.toLowerCase() === tag.toLowerCase())
+          );
+          if (!hasAllTags) return false;
+        }
 
-      return true;
-    })
-    .sort((a, b) => {
-      // When searching, sort by FlexSearch relevance score
-      if (searchQuery && searchScoreMap.size > 0) {
-        const scoreA = searchScoreMap.get(a.id) || 0;
-        const scoreB = searchScoreMap.get(b.id) || 0;
-        return scoreB - scoreA; // Higher score first
-      }
-      // Default sort by updatedAt (most recent first)
-      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-    });
+        // Text search filter (works with both boolean and simple tag filters)
+        if (searchQuery) {
+          if (!searchScoreMap.has(prompt.id)) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        // When searching, sort by FlexSearch relevance score
+        if (searchQuery && searchScoreMap.size > 0) {
+          const scoreA = searchScoreMap.get(a.id) || 0;
+          const scoreB = searchScoreMap.get(b.id) || 0;
+          return scoreB - scoreA; // Higher score first
+        }
+        // Default sort by updatedAt (most recent first)
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
+  }, [prompts, searchQuery, showArchived, showDuplicates, booleanExpression, selectedTags]);
 
   // Observe New Prompt button visibility to show floating version in header
   useEffect(() => {
@@ -748,6 +747,30 @@ function App() {
     setTimeout(() => setCopiedPromptId(null), 1300);
   };
 
+  // Stable ID-based callbacks to prevent re-renders (fixes React.memo)
+  const handleViewById = useCallback((id: string) => {
+    const prompt = prompts.find(p => p.id === id);
+    if (prompt) handleView(prompt);
+  }, [prompts]);
+
+  const handleEditById = useCallback((id: string) => {
+    const prompt = prompts.find(p => p.id === id);
+    if (prompt) handleEdit(prompt);
+  }, [prompts]);
+
+  const handleArchiveById = useCallback((id: string) => {
+    archivePrompt(id, password || undefined);
+  }, [archivePrompt, password]);
+
+  const handleRestoreById = useCallback((id: string) => {
+    restorePrompt(id, password || undefined);
+  }, [restorePrompt, password]);
+
+  const handleCopyById = useCallback((id: string) => {
+    const prompt = prompts.find(p => p.id === id);
+    if (prompt) handleCopy(prompt);
+  }, [prompts]);
+
   const handleSave = async (data: Partial<Prompt>) => {
     if (editingPrompt) {
       return await updatePrompt(editingPrompt.id, data, password || undefined);
@@ -1016,33 +1039,32 @@ function App() {
           <div className="border border-border bg-card rounded-lg overflow-hidden">
             {filteredPrompts.map((prompt, index) => (
               <PromptListItem
-                key={`${prompt.id}-${index}`}
+                key={prompt.id}
                 prompt={prompt}
-                isSelected={index === selectedIndex}
                 isCopied={copiedPromptId === prompt.id}
-                onView={() => handleView(prompt)}
-                onEdit={() => handleEdit(prompt)}
-                onArchive={() => archivePrompt(prompt.id, password || undefined)}
-                onRestore={() => restorePrompt(prompt.id, password || undefined)}
-                onCopy={() => handleCopy(prompt)}
+                onView={handleViewById}
+                onEdit={handleEditById}
+                onArchive={handleArchiveById}
+                onRestore={handleRestoreById}
+                onCopyPrompt={handleCopyById}
                 variant="pane"
                 data-prompt-index={index}
+                data-selected={index === selectedIndex}
               />
             ))}
           </div>
         ) : (
           <div className="hidden sm:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredPrompts.map((prompt, index) => (
-              <div key={`${prompt.id}-${index}`} data-prompt-index={index}>
+              <div key={prompt.id} data-prompt-index={index} data-selected={index === selectedIndex}>
                 <PromptCard
                   prompt={prompt}
-                  isSelected={index === selectedIndex}
                   isCopied={copiedPromptId === prompt.id}
-                  onView={() => handleView(prompt)}
-                  onEdit={() => handleEdit(prompt)}
-                  onArchive={() => archivePrompt(prompt.id, password || undefined)}
-                  onRestore={() => restorePrompt(prompt.id, password || undefined)}
-                  onCopy={() => handleCopy(prompt)}
+                  onView={handleViewById}
+                  onEdit={handleEditById}
+                  onArchive={handleArchiveById}
+                  onRestore={handleRestoreById}
+                  onCopyPrompt={handleCopyById}
                 />
               </div>
             ))}
