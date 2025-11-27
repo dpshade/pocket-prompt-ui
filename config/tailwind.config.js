@@ -7,6 +7,10 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}", // fallback for any shared files
   ],
   theme: {
+    fontFamily: {
+      sans: ['"Stack Sans Text"', 'system-ui', 'sans-serif'],
+      headline: ['"Stack Sans Headline"', 'system-ui', 'sans-serif'],
+    },
     extend: {
       animation: {
         'bounce-slow': 'bounce-slow 3s ease-in-out infinite',
