@@ -1322,11 +1322,10 @@ function App() {
 
               {/* Results Section - Scrollable */}
               {loading ? (
-                <div className="text-center py-6 bg-card border-t border-border/30">
-                  <div className="animate-spin inline-block w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full" role="status">
-                    <span className="sr-only">Loading...</span>
+                <div className="flex justify-center py-3 border-t border-border/30">
+                  <div className="animate-spin w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full" role="status">
+                    <span className="sr-only">Loading</span>
                   </div>
-                  <p className="mt-2 text-muted-foreground text-xs animate-pulse">Loading...</p>
                 </div>
               ) : filteredPrompts.length === 0 && effectiveSearchQuery ? (
                 <div className="text-center py-4 bg-card border-t border-border/30">
@@ -1400,11 +1399,10 @@ function App() {
             {/* Mobile Results */}
             <div className="sm:hidden mt-6">
               {loading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin inline-block w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full" role="status">
-                    <span className="sr-only">Loading...</span>
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full" role="status">
+                    <span className="sr-only">Loading</span>
                   </div>
-                  <p className="mt-4 text-muted-foreground text-sm animate-pulse">Loading...</p>
                 </div>
               ) : filteredPrompts.length === 0 && effectiveSearchQuery ? (
                 <div className="text-center py-8">
