@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback, useRef, useMemo, useDeferredValue } f
 import { Plus, Archive as ArchiveIcon, Download, Copy } from 'lucide-react';
 import { WalletButton } from '@/frontend/components/wallet/WalletButton';
 import { SearchBar, type SearchBarHandle } from '@/frontend/components/search/SearchBar';
-import { PromptCard } from '@/frontend/components/prompts/PromptCard';
 import { PromptListItem } from '@/frontend/components/prompts/PromptListItem';
 import { PromptDialog } from '@/frontend/components/prompts/PromptDialog';
 import { PromptEditor } from '@/frontend/components/prompts/PromptEditor';
@@ -29,7 +28,7 @@ import type { Prompt, PromptVersion } from '@/shared/types/prompt';
 import { searchPrompts, simpleTitleSearch } from '@/core/search';
 import { evaluateExpression, expressionToString } from '@/core/search/boolean';
 import type { FileImportResult } from '@/shared/utils/import';
-import { getViewMode, saveViewMode, hasEncryptedPromptsInCache } from '@/core/storage/cache';
+import { hasEncryptedPromptsInCache } from '@/core/storage/cache';
 import type { EncryptedData } from '@/core/encryption/crypto';
 import { wasPromptEncrypted } from '@/core/encryption/crypto';
 import { findDuplicates } from '@/core/validation/duplicates';
@@ -108,7 +107,6 @@ function App() {
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>(() => getViewMode());
   const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
   const [passwordUnlockOpen, setPasswordUnlockOpen] = useState(false);
   const [sampleEncryptedData, setSampleEncryptedData] = useState<EncryptedData | null>(null);
@@ -124,23 +122,6 @@ function App() {
   const previousIndexRef = useRef<number>(0);
   const passwordCheckDone = useRef(false);
   const [hotkeysOpen, setHotkeysOpen] = useState(false);
-
-  // Track grid columns for keyboard navigation
-  const [gridColumns, setGridColumns] = useState(1);
-
-  useEffect(() => {
-    const updateGridColumns = () => {
-      const width = window.innerWidth;
-      if (width >= 1280) setGridColumns(4); // xl
-      else if (width >= 1024) setGridColumns(3); // lg
-      else if (width >= 640) setGridColumns(2); // sm
-      else setGridColumns(1); // default
-    };
-
-    updateGridColumns();
-    window.addEventListener('resize', updateGridColumns);
-    return () => window.removeEventListener('resize', updateGridColumns);
-  }, []);
 
   // Parse deep link parameters on initial load
   useEffect(() => {
@@ -604,11 +585,6 @@ function App() {
     }
   }, [viewDialogOpen, editorOpen, versionHistoryOpen, uploadDialogOpen, passwordPromptOpen, passwordUnlockOpen]);
 
-  const toggleViewMode = () => {
-    const newMode = viewMode === 'list' ? 'cards' : 'list';
-    setViewMode(newMode);
-    saveViewMode(newMode);
-  };
 
   // Reset password check when wallet disconnects
   useEffect(() => {
@@ -802,14 +778,14 @@ function App() {
     setSelectedIndex(-1);
   }, [filteredPrompts.length, effectiveSearchQuery, selectedTags, booleanExpression, showArchived]);
 
-  // Scroll selected item to center of screen during keyboard navigation
+  // Scroll selected item into view only when it goes out of visible area
   useEffect(() => {
     if (selectedIndex === -1 || !isKeyboardMode) return;
 
     const selectedElement = document.querySelector(`[data-prompt-index="${selectedIndex}"]`);
     if (selectedElement) {
-      // Always center the selected element in the viewport
-      selectedElement.scrollIntoView({ behavior: 'instant', block: 'center' });
+      // Only scroll if element is not fully visible - scrolls minimum amount needed
+      selectedElement.scrollIntoView({ behavior: 'instant', block: 'nearest' });
 
       // Update previous index for next comparison
       previousIndexRef.current = selectedIndex;
@@ -880,27 +856,17 @@ function App() {
           if (!isSearchInput && isTyping) return;
           event.preventDefault();
           mouseMovedSinceKeyboard.current = false; // Reset mouse movement tracking
-          // If coming from mouse mode, pick up from hovered position
-          if (!isKeyboardMode && hoveredIndexRef.current >= 0) {
-            setSelectedIndex(hoveredIndexRef.current);
-            setIsKeyboardMode(true);
-            break;
-          }
           setIsKeyboardMode(true);
           // If in search input, go to first result
           if (isSearchInput) {
             setSelectedIndex(0);
             searchBarRef.current?.blurSearchInput();
-          } else if (viewMode === 'list') {
-            // List view: go to next item (wrap around at the end)
-            setSelectedIndex((prev) => (prev < 0 ? 0 : (prev + 1) % numResults));
+          } else if (!isKeyboardMode && hoveredIndexRef.current >= 0) {
+            // If coming from mouse mode, pick up from hovered position
+            setSelectedIndex(hoveredIndexRef.current);
           } else {
-            // Grid view: go down one row
-            setSelectedIndex((prev) => {
-              const start = prev < 0 ? 0 : prev;
-              const next = start + gridColumns;
-              return next < numResults ? next : start;
-            });
+            // Go to next item (wrap around at the end)
+            setSelectedIndex((prev) => (prev < 0 ? 0 : (prev + 1) % numResults));
           }
           break;
         case 'ArrowUp':
@@ -909,19 +875,16 @@ function App() {
           if (!isSearchInput && isTyping) return;
           event.preventDefault();
           mouseMovedSinceKeyboard.current = false; // Reset mouse movement tracking
-          // If coming from mouse mode, pick up from hovered position
-          if (!isKeyboardMode && hoveredIndexRef.current >= 0) {
-            setSelectedIndex(hoveredIndexRef.current);
-            setIsKeyboardMode(true);
-            break;
-          }
           setIsKeyboardMode(true);
           // If in search input, go to last result
           if (isSearchInput) {
             setSelectedIndex(numResults - 1);
             searchBarRef.current?.blurSearchInput();
-          } else if (viewMode === 'list') {
-            // List view: if at top item (index 0), focus search input and unfocus results
+          } else if (!isKeyboardMode && hoveredIndexRef.current >= 0) {
+            // If coming from mouse mode, pick up from hovered position
+            setSelectedIndex(hoveredIndexRef.current);
+          } else {
+            // If at top item (index 0), focus search input and unfocus results
             if (selectedIndex <= 0) {
               searchBarRef.current?.focusSearchInput();
               setSelectedIndex(-1);
@@ -930,49 +893,7 @@ function App() {
               // Go to previous item
               setSelectedIndex((prev) => (prev - 1 + numResults) % numResults);
             }
-          } else {
-            // Grid view: if in top row, focus search input and unfocus results
-            if (selectedIndex < gridColumns) {
-              searchBarRef.current?.focusSearchInput();
-              setSelectedIndex(-1);
-            } else {
-              // Go up one row
-              setSelectedIndex((prev) => {
-                const next = prev - gridColumns;
-                return next >= 0 ? next : prev;
-              });
-            }
           }
-          break;
-        case 'ArrowLeft':
-          // Only for grid view
-          if (viewMode !== 'cards') return;
-          if (blockingDialogOpen) return;
-          if (!isSearchInput && isTyping) return;
-          event.preventDefault();
-          mouseMovedSinceKeyboard.current = false; // Reset mouse movement tracking
-          setSelectedIndex((prev) => {
-            // Don't go left if we're at the first column
-            const currentCol = prev % gridColumns;
-            if (currentCol === 0) return prev;
-            return prev - 1;
-          });
-          break;
-        case 'ArrowRight':
-          // Only for grid view
-          if (viewMode !== 'cards') return;
-          if (blockingDialogOpen) return;
-          if (!isSearchInput && isTyping) return;
-          event.preventDefault();
-          mouseMovedSinceKeyboard.current = false; // Reset mouse movement tracking
-          setSelectedIndex((prev) => {
-            // Don't go right if we're at the last column or last item
-            const currentCol = prev % gridColumns;
-            const isLastColumn = currentCol === gridColumns - 1;
-            const isLastItem = prev === numResults - 1;
-            if (isLastColumn || isLastItem) return prev;
-            return prev + 1;
-          });
           break;
         case 'Enter':
           // Don't allow in any dialogs
@@ -1015,7 +936,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [filteredPrompts, selectedIndex, selectedPrompt, viewDialogOpen, editorOpen, versionHistoryOpen, uploadDialogOpen, passwordPromptOpen, passwordUnlockOpen, password, archivePrompt, restorePrompt, viewMode, gridColumns]);
+  }, [filteredPrompts, selectedIndex, selectedPrompt, viewDialogOpen, editorOpen, versionHistoryOpen, uploadDialogOpen, passwordPromptOpen, passwordUnlockOpen, password, archivePrompt, restorePrompt]);
 
   const handleCreateNew = () => {
     setEditingPrompt(null);
@@ -1274,16 +1195,16 @@ function App() {
       </header>
 
       {/* Main Content - Search Engine Style */}
-      <main className="min-h-screen px-4 sm:px-6 lg:px-10 pb-[calc(11rem+env(safe-area-inset-bottom))] sm:pb-6 flex flex-col justify-center">
+      <main className="min-h-screen px-4 sm:px-6 lg:px-10 pb-[calc(11rem+env(safe-area-inset-bottom))] sm:pb-6 pt-[22vh] sm:pt-[27vh]">
         <div className="mx-auto w-full max-w-2xl">
           {/* Search Container - Logo + Search + Results */}
           <div className="flex flex-col">
             {/* Logo Section */}
-            <div className="flex items-center justify-center gap-3 mb-5">
+            <div className="flex items-center justify-center gap-3 mb-8">
               <img
                 src="/icon-48.png"
                 alt="Pocket Prompt Logo"
-                className="h-6 w-6 sm:h-7 sm:w-7"
+                className="h-7 w-7 sm:h-9 sm:w-9"
               />
               <h1 className="font-bold text-foreground text-3xl sm:text-4xl tracking-tight">
                 Pocket Prompt
@@ -1296,14 +1217,12 @@ function App() {
                 ref={searchBarRef}
                 showArchived={showArchived}
                 setShowArchived={setShowArchived}
-                viewMode={viewMode}
-                onViewModeToggle={toggleViewMode}
                 showDuplicates={showDuplicates}
                 setShowDuplicates={setShowDuplicates}
                 collections={collections}
                 showNewPromptButton={true}
                 onCreateNew={handleCreateNew}
-                connectedBottom={!loading && filteredPrompts.length > 0 && viewMode === 'list'}
+                connectedBottom={!loading && filteredPrompts.length > 0}
               />
 
               {/* Status Indicators */}
@@ -1326,67 +1245,33 @@ function App() {
                   <p className="text-muted-foreground text-sm">No matches found.</p>
                 </div>
               ) : filteredPrompts.length > 0 ? (
-                <>
-                  {viewMode === 'list' ? (
-                    <div className="bg-card border-t border-border/30" data-keyboard-mode={isKeyboardMode}>
-                      <div className="max-h-[300px] overflow-y-auto">
-                        {filteredPrompts.map((prompt, index) => (
-                          <PromptListItem
-                            key={prompt.id}
-                            prompt={prompt}
-                            isCopied={copiedPromptId === prompt.id}
-                            onView={handleViewById}
-                            onEdit={handleEditById}
-                            onArchive={handleArchiveById}
-                            onRestore={handleRestoreById}
-                            onCopyPrompt={handleCopyById}
-                            onMouseEnter={() => handleMouseEnterItem(index)}
-                            variant="pane"
-                            data-prompt-index={index}
-                            data-selected={isKeyboardMode && index === selectedIndex}
-                          />
-                        ))}
-                      </div>
-                      <div className="px-3 py-1.5 text-center text-[11px] text-muted-foreground border-t border-border/20 bg-muted/20">
-                        {filteredPrompts.length} {filteredPrompts.length === 1 ? 'prompt' : 'prompts'}
-                        {(() => {
-                          const totalActive = prompts.filter(p => !p.isArchived).length;
-                          return filteredPrompts.length !== totalActive && !showArchived ? ` of ${totalActive}` : '';
-                        })()}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-3" data-keyboard-mode={isKeyboardMode}>
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 max-h-[340px] overflow-y-auto pr-1">
-                        {filteredPrompts.map((prompt, index) => (
-                          <div
-                            key={prompt.id}
-                            data-prompt-index={index}
-                            data-selected={isKeyboardMode && index === selectedIndex}
-                            onMouseEnter={() => handleMouseEnterItem(index)}
-                          >
-                            <PromptCard
-                              prompt={prompt}
-                              isCopied={copiedPromptId === prompt.id}
-                              onView={handleViewById}
-                              onEdit={handleEditById}
-                              onArchive={handleArchiveById}
-                              onRestore={handleRestoreById}
-                              onCopyPrompt={handleCopyById}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-3 text-center text-xs text-muted-foreground">
-                        {filteredPrompts.length} {filteredPrompts.length === 1 ? 'prompt' : 'prompts'}
-                        {(() => {
-                          const totalActive = prompts.filter(p => !p.isArchived).length;
-                          return filteredPrompts.length !== totalActive && !showArchived ? ` of ${totalActive}` : '';
-                        })()}
-                      </div>
-                    </div>
-                  )}
-                </>
+                <div className="bg-card border-t border-border/30" data-keyboard-mode={isKeyboardMode}>
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {filteredPrompts.map((prompt, index) => (
+                      <PromptListItem
+                        key={prompt.id}
+                        prompt={prompt}
+                        isCopied={copiedPromptId === prompt.id}
+                        onView={handleViewById}
+                        onEdit={handleEditById}
+                        onArchive={handleArchiveById}
+                        onRestore={handleRestoreById}
+                        onCopyPrompt={handleCopyById}
+                        onMouseEnter={() => handleMouseEnterItem(index)}
+                        variant="pane"
+                        data-prompt-index={index}
+                        data-selected={isKeyboardMode && index === selectedIndex}
+                      />
+                    ))}
+                  </div>
+                  <div className="px-3 py-1.5 text-center text-[11px] text-muted-foreground border-t border-border/20 bg-muted/20">
+                    {filteredPrompts.length} {filteredPrompts.length === 1 ? 'prompt' : 'prompts'}
+                    {(() => {
+                      const totalActive = prompts.filter(p => !p.isArchived).length;
+                      return filteredPrompts.length !== totalActive && !showArchived ? ` of ${totalActive}` : '';
+                    })()}
+                  </div>
+                </div>
               ) : null}
             </div>
 
@@ -1433,8 +1318,6 @@ function App() {
             <SearchBar
               showArchived={showArchived}
               setShowArchived={setShowArchived}
-              viewMode={viewMode}
-              onViewModeToggle={toggleViewMode}
               showDuplicates={showDuplicates}
               setShowDuplicates={setShowDuplicates}
               collections={collections}

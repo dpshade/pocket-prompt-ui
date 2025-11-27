@@ -8,8 +8,9 @@ export default {
   ],
   theme: {
     fontFamily: {
-      sans: ['Jost', 'system-ui', 'sans-serif'],
-      headline: ['Jost', 'system-ui', 'sans-serif'],
+      sans: ['Geist', 'system-ui', 'sans-serif'],
+      headline: ['Geist', 'system-ui', 'sans-serif'],
+      mono: ['Geist Mono', 'ui-monospace', 'monospace'],
     },
     extend: {
       animation: {

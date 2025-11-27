@@ -1,28 +1,79 @@
+@font-face {
+  font-family: 'Geist';
+  src: url('/node_modules/geist/dist/fonts/geist-sans/Geist-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/node_modules/geist/dist/fonts/geist-sans/Geist-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/node_modules/geist/dist/fonts/geist-sans/Geist-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/node_modules/geist/dist/fonts/geist-sans/Geist-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/node_modules/geist/dist/fonts/geist-mono/GeistMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 270 16% 94%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 270 15% 96%;
-    --card-foreground: 222.2 84% 4.9%;
+    --font-geist-sans: 'Geist', sans-serif;
+    --font-geist-mono: 'Geist Mono', monospace;
+    --background: 0 0% 97%;
+    --foreground: 0 0% 9%;
+    --card: 0 0% 99%;
+    --card-foreground: 0 0% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 270 30% 47%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 270 15% 96%;
-    --secondary-foreground: 270 30% 25%;
-    --muted: 270 15% 96%;
-    --muted-foreground: 270 10% 46%;
-    --accent: 270 30% 47%;
-    --accent-foreground: 0 0% 98%;
+    --popover-foreground: 0 0% 9%;
+    /* Pocket Red - softer, less saturated */
+    --primary: 351 70% 65%;
+    --primary-hover: 351 65% 58%;
+    --primary-pressed: 350 60% 52%;
+    --primary-soft: 351 50% 94%;
+    --primary-foreground: 0 0% 100%;
+    /* Sunset Yellow - sunshine pastel for tags */
+    --secondary: 45 70% 92%;
+    --secondary-hover: 45 65% 87%;
+    --secondary-pressed: 45 60% 80%;
+    --secondary-soft: 45 50% 96%;
+    --secondary-foreground: 40 40% 30%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 46%;
+    /* Accent uses primary (Pocket Red) */
+    --accent: 351 70% 65%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 270 15% 91%;
-    --input: 270 15% 91%;
-    --ring: 270 30% 47%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 350 60% 52%;
     --radius: 1.5rem;
   }
 
@@ -33,19 +84,28 @@
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 270 35% 60%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 14%;
-    --secondary-foreground: 0 0% 98%;
+    /* Pocket Red - softer for dark mode */
+    --primary: 351 65% 68%;
+    --primary-hover: 351 60% 62%;
+    --primary-pressed: 350 55% 55%;
+    --primary-soft: 351 30% 18%;
+    --primary-foreground: 0 0% 100%;
+    /* Sunset Yellow - sunshine pastel for dark mode tags */
+    --secondary: 45 50% 30%;
+    --secondary-hover: 45 55% 35%;
+    --secondary-pressed: 45 60% 40%;
+    --secondary-soft: 45 35% 18%;
+    --secondary-foreground: 45 60% 92%;
     --muted: 0 0% 14%;
     --muted-foreground: 0 0% 75%;
-    --accent: 270 35% 60%;
-    --accent-foreground: 0 0% 98%;
+    /* Accent uses primary (Pocket Red) */
+    --accent: 351 65% 68%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    --ring: 270 35% 60%;
+    --ring: 350 55% 55%;
   }
 }
 
@@ -53,6 +113,7 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family: var(--font-geist-sans);
   }
 
   /* macOS native window border radius to match OS style */

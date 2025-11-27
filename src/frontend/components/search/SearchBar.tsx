@@ -1,4 +1,4 @@
-import { Search, X, Filter, Bookmark, Archive, LayoutGrid, List, Plus } from 'lucide-react';
+import { Search, X, Filter, Bookmark, Archive, Plus } from 'lucide-react';
 import { Input } from '@/frontend/components/ui/input';
 import { Badge } from '@/frontend/components/ui/badge';
 import { Button } from '@/frontend/components/ui/button';
@@ -15,8 +15,6 @@ import { getDuplicateCount } from '@/core/validation/duplicates';
 interface SearchBarProps {
   showArchived: boolean;
   setShowArchived: (show: boolean) => void;
-  viewMode: 'list' | 'cards';
-  onViewModeToggle: () => void;
   showDuplicates: boolean;
   setShowDuplicates: (show: boolean) => void;
   collections: UseCollectionsReturn;
@@ -30,7 +28,7 @@ export interface SearchBarHandle {
   blurSearchInput: () => void;
 }
 
-export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({ showArchived, setShowArchived, viewMode, onViewModeToggle, showDuplicates, setShowDuplicates, collections, showNewPromptButton = false, onCreateNew, connectedBottom = false }, ref) => {
+export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({ showArchived, setShowArchived, showDuplicates, setShowDuplicates, collections, showNewPromptButton = false, onCreateNew, connectedBottom = false }, ref) => {
   const {
     prompts,
     searchQuery,
@@ -241,7 +239,7 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({ showArch
 
   return (
     <>
-      <div className={`bg-gradient-to-b from-white to-[#faf8fc] dark:from-[#161418] dark:to-[#131115] relative px-4 py-3 sm:px-3 sm:py-2.5 space-y-2 ${connectedBottom ? '' : 'rounded-2xl shadow-soft ring-1 ring-primary/10'}`}>
+      <div className={`bg-gradient-to-b from-white to-[#faf8fc] dark:bg-card dark:from-transparent dark:to-transparent relative px-4 py-3 sm:px-3 sm:py-2.5 space-y-2 ${connectedBottom ? '' : 'rounded-2xl shadow-soft ring-1 ring-primary/10'}`}>
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 sm:left-2.5 top-1/2 h-4 w-4 sm:h-3.5 sm:w-3.5 -translate-y-1/2 text-muted-foreground" />
 
@@ -330,23 +328,6 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(({ showArch
                   title={showArchived ? 'Hide archived' : 'Show archived'}
                 >
                   <Archive className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={(e) => {
-                    onViewModeToggle();
-                    // Blur the button to prevent focus outline during keyboard navigation
-                    (e.currentTarget as HTMLButtonElement).blur();
-                  }}
-                  className="hidden md:flex h-7 w-7 p-0"
-                  title={viewMode === 'list' ? 'Switch to cards view' : 'Switch to list view'}
-                >
-                  {viewMode === 'list' ? (
-                    <LayoutGrid className="h-4 w-4" />
-                  ) : (
-                    <List className="h-4 w-4" />
-                  )}
                 </Button>
               </div>
             </div>
