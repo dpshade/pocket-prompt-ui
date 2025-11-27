@@ -64,6 +64,12 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
+
+  /* macOS native window border radius to match OS style */
+  html[data-platform="macos"] {
+    border-radius: 10px;
+    overflow: hidden;
+  }
 }
 
 @layer utilities {
