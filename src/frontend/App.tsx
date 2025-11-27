@@ -15,6 +15,7 @@ import { HotkeysDialog } from '@/frontend/components/shared/HotkeysDialog';
 import { ComingSoonButton } from '@/frontend/components/waitlist/ComingSoonButton';
 import { PublicPromptView } from '@/frontend/components/prompts/PublicPromptView';
 import { TursoSharedPromptView } from '@/frontend/components/prompts/TursoSharedPromptView';
+import { SyncButton } from '@/frontend/components/sync/SyncButton';
 import { Button } from '@/frontend/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/frontend/components/ui/tooltip';
 import { useWallet } from '@/frontend/hooks/useWallet';
@@ -24,6 +25,7 @@ import { usePassword } from '@/frontend/contexts/PasswordContext';
 import { FEATURE_FLAGS } from '@/shared/config/features';
 import { useInitializeTheme } from '@/frontend/hooks/useTheme';
 import { useCollections } from '@/frontend/hooks/useCollections';
+import { useSyncModeStatus, validateDirectoryOnStartup } from '@/frontend/hooks/useSyncMode';
 import type { Prompt, PromptVersion } from '@/shared/types/prompt';
 import { searchPrompts, simpleTitleSearch } from '@/core/search';
 import { evaluateExpression, expressionToString } from '@/core/search/boolean';
@@ -44,7 +46,15 @@ function App() {
 
   // Auto-initialize identity for local-first mode
   useEffect(() => {
+    console.log('[DEBUG] Identity state:', {
+      connected: identity.connected,
+      connecting: identity.connecting,
+      error: identity.error,
+      deviceId: identity.deviceId
+    });
+    
     if (!identity.connected && !identity.connecting) {
+      console.log('[DEBUG] Initializing identity...');
       identity.initialize();
     }
   }, [identity]);
@@ -89,10 +99,10 @@ function App() {
     setSearchQuery,
     setBooleanExpression,
     loadSavedSearch,
-    directoryMode,
-    attachedDirectory,
     directorySyncing,
   } = usePrompts();
+
+  const syncStatus = useSyncModeStatus();
 
   // Defer searchQuery for filtering - keeps input responsive while filtering happens in background
   // EXCEPT for clearing: when searchQuery is empty, use it directly for instant clear
@@ -125,6 +135,7 @@ function App() {
   const previousIndexRef = useRef<number>(0);
   const passwordCheckDone = useRef(false);
   const [hotkeysOpen, setHotkeysOpen] = useState(false);
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
 
   // Update selected prompt when prompts change (fixes caching issue)
   useEffect(() => {
@@ -694,12 +705,32 @@ function App() {
     checkForEncryptedPrompts();
   }, [connected, hasPassword, isLoadingPassword, address]);
 
-  // Load prompts on identity connected
+  // Load prompts on identity connected - with directory validation for attached mode
   useEffect(() => {
+    console.log('[DEBUG] Identity connected effect:', {
+      identityConnected: identity.connected,
+      loadPromptsExists: typeof loadPrompts === 'function',
+      syncStatus: syncStatus.mode
+    });
+    
     if (identity.connected) {
-      loadPrompts();
+      // For attached directory mode, validate directory accessibility first
+      if (syncStatus.mode === 'attached-directory') {
+        console.log('[DEBUG] Validating directory accessibility before loading prompts...');
+        validateDirectoryOnStartup().then((isValid) => {
+          if (isValid) {
+            console.log('[DEBUG] Directory validation passed, calling loadPrompts()...');
+            loadPrompts();
+          } else {
+            console.error('[DEBUG] Directory validation failed, not loading prompts');
+          }
+        });
+      } else {
+        console.log('[DEBUG] Not in attached directory mode, calling loadPrompts() directly...');
+        loadPrompts();
+      }
     }
-  }, [identity.connected, loadPrompts]);
+  }, [identity.connected, loadPrompts, syncStatus.mode]);
 
   const handlePasswordSet = (newPassword: string) => {
     setPassword(newPassword);
@@ -1171,8 +1202,8 @@ function App() {
       {/* Minimal Header - Action buttons only */}
       <header className="fixed top-0 right-0 z-50 pointer-events-none px-4 sm:px-6 lg:px-10 pt-[calc(env(safe-area-inset-top)+0.85rem)]" data-tauri-drag-region>
         <div className="flex items-center gap-2 pointer-events-auto">
-          {/* Directory Mode Indicator */}
-          {directoryMode && (
+          {/* Sync Mode Indicator */}
+          {syncStatus.mode === 'attached-directory' && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1183,38 +1214,31 @@ function App() {
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs">
                   <p className="font-medium mb-1">{directorySyncing ? 'Syncing with directory...' : 'Directory attached'}</p>
-                  <p className="text-xs text-muted-foreground break-all">{attachedDirectory}</p>
+                  <p className="text-xs text-muted-foreground break-all">{syncStatus.attachedDirectory}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
 
-          {/* Desktop buttons */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setUploadDialogOpen(true)}
-                  className="hidden sm:flex h-10 w-10 rounded-full"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Import/Export</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {/* Desktop action buttons */}
+          <div className="hidden sm:flex items-center gap-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setUploadDialogOpen(true)}
+                  >
+                    <Download className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Import/Export</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-          {/* Coming Soon features (Sync + Packs) */}
-          <div className="hidden sm:block">
-            <ComingSoonButton />
-          </div>
-
-          {/* Desktop theme toggle */}
-          <div className="hidden sm:block">
+            <SyncButton />
+            <ComingSoonButton open={comingSoonOpen} onOpenChange={setComingSoonOpen} />
             <ThemeToggle />
           </div>
 
@@ -1222,15 +1246,19 @@ function App() {
             <WalletButton onSetPassword={() => setPasswordPromptOpen(true)} />
           )}
 
-          {/* Mobile menu - shown only on mobile */}
-          <MobileMenu
-            onUploadClick={() => setUploadDialogOpen(true)}
-          />
+          {/* Mobile buttons */}
+          <div className="sm:hidden flex items-center gap-1">
+            <SyncButton />
+            <MobileMenu
+              onUploadClick={() => setUploadDialogOpen(true)}
+              onWhatsNextClick={() => setComingSoonOpen(true)}
+            />
+          </div>
         </div>
       </header>
 
       {/* Main Content - Search Engine Style */}
-      <main className={`min-h-screen px-4 sm:px-6 lg:px-10 pb-[calc(11rem+env(safe-area-inset-bottom))] sm:pb-6 flex justify-center transition-[padding] duration-300 ease-out ${filteredPrompts.length > 0 ? 'pt-[25vh] sm:pt-[30vh]' : 'pt-[30vh] sm:pt-[35vh]'}`}>
+      <main className={`min-h-screen px-4 sm:px-6 lg:px-10 pb-[calc(11rem+env(safe-area-inset-bottom))] sm:pb-6 flex justify-center transition-[padding] duration-300 ease-out ${filteredPrompts.length > 0 ? 'pt-[28vh] sm:pt-[33vh]' : 'pt-[33vh] sm:pt-[38vh]'}`}>
         <div className="w-full max-w-2xl">
           {/* Search Container - Logo + Search + Results */}
           <div className="flex flex-col w-full">

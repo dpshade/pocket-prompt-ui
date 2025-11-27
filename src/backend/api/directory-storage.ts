@@ -254,7 +254,9 @@ export async function watchDirectory(
 
   const reloadPrompts = async () => {
     try {
+      console.log('[DirectoryStorage] Reloading prompts from directory');
       const prompts = await readPromptsFromDirectory(directoryPath);
+      console.log(`[DirectoryStorage] Reloaded ${prompts.length} prompts`);
       changeListeners.forEach(listener => listener(prompts));
     } catch (error) {
       console.error('Failed to reload prompts after change:', error);
@@ -294,8 +296,8 @@ export async function watchDirectory(
         // In a real implementation, you'd track mtimes properly
         const hasChanges = entries.some(e => e.name?.endsWith('.md'));
         if (hasChanges) {
-          // Only reload if we detect potential changes
-          // This is a simplified check - full implementation would track file mtimes
+          console.log('[DirectoryStorage] Polling detected potential changes');
+          debouncedReload();
         }
       } catch {
         // Ignore polling errors

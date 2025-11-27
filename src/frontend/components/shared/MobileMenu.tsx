@@ -1,4 +1,4 @@
-import { MoreVertical, Upload, Sun, Moon } from 'lucide-react';
+import { MoreVertical, Upload, Sun, Moon, Rocket } from 'lucide-react';
 import { Button } from '@/frontend/components/ui/button';
 import {
   DropdownMenu,
@@ -10,9 +10,10 @@ import { useTheme } from '@/frontend/hooks/useTheme';
 
 interface MobileMenuProps {
   onUploadClick: () => void;
+  onWhatsNextClick?: () => void;
 }
 
-export function MobileMenu({ onUploadClick }: MobileMenuProps) {
+export function MobileMenu({ onUploadClick, onWhatsNextClick }: MobileMenuProps) {
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -29,8 +30,14 @@ export function MobileMenu({ onUploadClick }: MobileMenuProps) {
       <DropdownMenuContent align="end" sideOffset={2} className="w-48">
         <DropdownMenuItem onClick={onUploadClick}>
           <Upload className="mr-2 h-4 w-4" />
-          <span>Upload Files</span>
+          <span>Import/Export</span>
         </DropdownMenuItem>
+        {onWhatsNextClick && (
+          <DropdownMenuItem onClick={onWhatsNextClick}>
+            <Rocket className="mr-2 h-4 w-4" />
+            <span>What's Next</span>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={toggleTheme}>
           {theme === 'dark' ? (
             <>

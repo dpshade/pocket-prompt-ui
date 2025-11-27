@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import type { Prompt, PromptMetadata, BooleanExpression, SavedSearch } from '@/shared/types/prompt';
-import { getCachedPrompts, cachePrompt, addPromptToProfile, archivePrompt as archivePromptStorage, restorePrompt as restorePromptStorage, getAttachedDirectory, setAttachedDirectory as saveAttachedDirectory, isDirectoryMode } from '@/core/storage/cache';
+import { getCachedPrompts, cachePrompt, addPromptToProfile, archivePrompt as archivePromptStorage, restorePrompt as restorePromptStorage } from '@/core/storage/cache';
 import { indexPrompts, addToIndex, removeFromIndex } from '@/core/search';
 import { getDeviceId } from '@/core/identity/device';
 import * as tursoQueries from '@/backend/api/turso-queries';
 import * as directoryStorage from '@/backend/api/directory-storage';
+import { useSyncMode } from './useSyncMode';
 
 // Notification callbacks for upload tracking
 export type UploadStartCallback = (txId: string, title: string) => void;
@@ -21,9 +22,7 @@ interface PromptsState {
   onUploadStart?: UploadStartCallback;
   onUploadComplete?: UploadCompleteCallback;
 
-  // Directory mode state
-  directoryMode: boolean;
-  attachedDirectory: string | null;
+  // Sync state - now managed by useSyncMode hook
   directorySyncing: boolean; // True when syncing with attached directory
 
   loadPrompts: (password?: string) => Promise<void>;
@@ -40,77 +39,102 @@ interface PromptsState {
   clearBooleanSearch: () => void;
   setUploadCallbacks: (onStart?: UploadStartCallback, onComplete?: UploadCompleteCallback) => void;
 
-  // Directory mode methods
-  attachDirectory: () => Promise<string | null>;
-  detachDirectory: () => void;
+  // Sync methods - now delegated to useSyncMode hook
   resetAllData: () => Promise<void>;
   set: (state: Partial<PromptsState>) => void;
 }
 
-export const usePrompts = create<PromptsState>((set, get) => ({
-  prompts: [],
-  loading: false,
-  error: null,
-  searchQuery: '',
-  selectedTags: [],
-  booleanExpression: null,
-  activeSavedSearch: null,
-  onUploadStart: undefined,
-  onUploadComplete: undefined,
+export const usePrompts = create<PromptsState>((set, get) => {
+  return {
+    prompts: [],
+    loading: false,
+    error: null,
+    searchQuery: '',
+    selectedTags: [],
+    booleanExpression: null,
+    activeSavedSearch: null,
+    onUploadStart: undefined,
+    onUploadComplete: undefined,
 
-  // Initialize directory mode from stored state
-  directoryMode: isDirectoryMode(),
-  attachedDirectory: getAttachedDirectory(),
-  directorySyncing: false,
+    // Sync state - now managed by useSyncMode hook
+    directorySyncing: false,
 
-  loadPrompts: async (_password?: string) => {
-    const state = get();
-    if (state.directoryMode && state.attachedDirectory) {
-      return loadPromptsFromDirectory(set, get, state.attachedDirectory);
+    loadPrompts: async (_password?: string) => {
+    const { currentMode, attachedDirectory } = useSyncMode.getState();
+    const isAttachedDirectory = currentMode === 'attached-directory' && attachedDirectory !== null;
+    
+    console.log('[DEBUG] loadPrompts called:', {
+      isAttachedDirectory,
+      attachedDirectory,
+      hasDirectory: isAttachedDirectory && !!attachedDirectory
+    });
+    
+    // Use explicit sync mode instead of localStorage detection
+    if (isAttachedDirectory && attachedDirectory) {
+      console.log('[DEBUG] Initializing directory mode with path:', attachedDirectory);
+      try {
+        return await initializeDirectoryMode(set, get, attachedDirectory);
+      } catch (dirError) {
+        console.error('[DEBUG] Directory mode failed, falling back to Turso:', dirError);
+        // Fall back to Turso if directory fails
+        return loadPromptsFromTurso(set, get);
+      }
     }
+    
+    console.log('[DEBUG] Loading from Turso (app-only mode)');
     return loadPromptsFromTurso(set, get);
   },
 
-  addPrompt: async (promptData, _password?: string) => {
-    const state = get();
-    if (state.directoryMode && state.attachedDirectory) {
-      return addPromptToDirectory(set, get, promptData, state.attachedDirectory);
-    }
-    return addPromptToTurso(set, get, promptData);
-  },
+    addPrompt: async (promptData, _password?: string) => {
+      const { currentMode, attachedDirectory } = useSyncMode.getState();
+      const isAttachedDirectory = currentMode === 'attached-directory' && attachedDirectory !== null;
+      
+      if (isAttachedDirectory && attachedDirectory) {
+        return addPromptToDirectory(set, get, promptData, attachedDirectory);
+      }
+      return addPromptToTurso(set, get, promptData);
+    },
 
-  updatePrompt: async (id, updates, _password?: string) => {
-    const state = get();
-    if (state.directoryMode && state.attachedDirectory) {
-      return updatePromptInDirectory(set, get, id, updates, state.attachedDirectory);
-    }
-    return updatePromptInTurso(set, get, id, updates);
-  },
+    updatePrompt: async (id, updates, _password?: string) => {
+      const { currentMode, attachedDirectory } = useSyncMode.getState();
+      const isAttachedDirectory = currentMode === 'attached-directory' && attachedDirectory !== null;
+      
+      if (isAttachedDirectory && attachedDirectory) {
+        return updatePromptInDirectory(set, get, id, updates, attachedDirectory);
+      }
+      return updatePromptInTurso(set, get, id, updates);
+    },
 
-  archivePrompt: async (id, _password?: string) => {
-    const state = get();
-    if (state.directoryMode && state.attachedDirectory) {
-      return archivePromptInDirectory(set, get, id, state.attachedDirectory);
-    }
-    return archivePromptInTurso(set, get, id);
-  },
+    archivePrompt: async (id, _password?: string) => {
+      const { currentMode, attachedDirectory } = useSyncMode.getState();
+      const isAttachedDirectory = currentMode === 'attached-directory' && attachedDirectory !== null;
+      
+      if (isAttachedDirectory && attachedDirectory) {
+        return archivePromptInDirectory(set, get, id, attachedDirectory);
+      }
+      return archivePromptInTurso(set, get, id);
+    },
 
-  restorePrompt: async (id, _password?: string) => {
-    const state = get();
-    if (state.directoryMode && state.attachedDirectory) {
-      return restorePromptInDirectory(set, get, id, state.attachedDirectory);
-    }
-    return restorePromptInTurso(set, get, id);
-  },
+    restorePrompt: async (id, _password?: string) => {
+      const { currentMode, attachedDirectory } = useSyncMode.getState();
+      const isAttachedDirectory = currentMode === 'attached-directory' && attachedDirectory !== null;
+      
+      if (isAttachedDirectory && attachedDirectory) {
+        return restorePromptInDirectory(set, get, id, attachedDirectory);
+      }
+      return restorePromptInTurso(set, get, id);
+    },
 
-  deletePrompt: async (id) => {
-    const state = get();
-    if (state.directoryMode && state.attachedDirectory) {
-      return deletePromptInDirectory(set, get, id, state.attachedDirectory);
-    }
-    // In database mode, we just archive (soft delete)
-    return archivePromptInTurso(set, get, id);
-  },
+    deletePrompt: async (id) => {
+      const { currentMode, attachedDirectory } = useSyncMode.getState();
+      const isAttachedDirectory = currentMode === 'attached-directory' && attachedDirectory !== null;
+      
+      if (isAttachedDirectory && attachedDirectory) {
+        return deletePromptInDirectory(set, get, id, attachedDirectory);
+      }
+      // In database mode, we just archive (soft delete)
+      return archivePromptInTurso(set, get, id);
+    },
 
   setSearchQuery: (query) => {
     console.log('[UsePrompts] Setting search query:', query, 'previous query:', get().searchQuery);
@@ -179,124 +203,40 @@ export const usePrompts = create<PromptsState>((set, get) => ({
     set({ onUploadStart: onStart, onUploadComplete: onComplete });
   },
 
-  attachDirectory: async () => {
-    try {
-      const path = await directoryStorage.selectDirectory();
-      if (!path) return null;
 
-      // Save the path and switch to directory mode
-      saveAttachedDirectory(path);
-      set({
-        directoryMode: true,
-        attachedDirectory: path,
-        prompts: [],
-        loading: true,
-        error: null,
-      });
 
-      // Load prompts from the directory
-      const prompts = await directoryStorage.readPromptsFromDirectory(path);
-      indexPrompts(prompts);
+    resetAllData: async () => {
+      // Clear FlexSearch index
+      const { indexPrompts } = await import('@/core/search');
+      indexPrompts([]); // Clear index by reinitializing with empty array
 
-      // Set prompts immediately so user sees them
-      set({ prompts, loading: false });
-
-      // Start watching for changes (non-blocking, failures are ok)
+      // Clear Turso data if user exists
       try {
-        await directoryStorage.watchDirectory(path, async (updatedPrompts) => {
-          set({ directorySyncing: true });
-          indexPrompts(updatedPrompts);
-          set({ prompts: updatedPrompts, directorySyncing: false });
-          
-          // Sync to Turso in background (non-blocking)
-          try {
-            const deviceId = getDeviceId();
-            const user = await tursoQueries.getOrCreateUser(deviceId);
-            
-            // Sync each prompt to Turso
-            for (const prompt of updatedPrompts) {
-              try {
-                await tursoQueries.createPrompt(user.id, {
-                  id: prompt.id,
-                  title: prompt.title,
-                  description: prompt.description,
-                  content: prompt.content,
-                  tags: prompt.tags,
-                  createdAt: prompt.createdAt,
-                  updatedAt: prompt.updatedAt,
-                });
-              } catch (syncError) {
-                console.warn(`Failed to sync prompt ${prompt.id} to Turso:`, syncError);
-              }
-            }
-          } catch (tursoError) {
-            console.warn('Failed to sync to Turso (continuing anyway):', tursoError);
-          }
-        });
-      } catch (watchError) {
-        console.warn('File watching not available:', watchError);
-        // Continue without watching - user can manually refresh
+        const deviceId = getDeviceId();
+        const user = await tursoQueries.getOrCreateUser(deviceId);
+        await tursoQueries.clearAllUserData(user.id);
+      } catch (error) {
+        console.warn('Failed to clear Turso data:', error);
       }
 
-      return path;
-    } catch (error) {
-      console.error('Failed to attach directory:', error);
-      // Reset to non-directory mode on error
-      saveAttachedDirectory(null);
-      set({
-        directoryMode: false,
-        attachedDirectory: null,
-        error: 'Failed to attach directory',
-        loading: false
-      });
-      return null;
-    }
-  },
+      // Clear localStorage cache
+      const { clearCache } = await import('@/core/storage/cache');
+      clearCache();
 
-  detachDirectory: () => {
-    // Stop watching
-    directoryStorage.stopWatching();
+      // Detach directory if attached using sync mode hook
+      const { detachDirectory, currentMode, attachedDirectory } = useSyncMode.getState();
+      const isAttachedDirectory = currentMode === 'attached-directory' && attachedDirectory !== null;
+      if (isAttachedDirectory) {
+        detachDirectory();
+      }
 
-    // Clear the stored path
-    saveAttachedDirectory(null);
-
-    // Switch back to database mode
-    set({
-      directoryMode: false,
-      attachedDirectory: null,
-      prompts: [],
-    });
-  },
-
-  resetAllData: async () => {
-    // Clear FlexSearch index
-    const { indexPrompts } = await import('@/core/search');
-    indexPrompts([]); // Clear index by reinitializing with empty array
-
-    // Clear Turso data if user exists
-    try {
-      const deviceId = getDeviceId();
-      const user = await tursoQueries.getOrCreateUser(deviceId);
-      await tursoQueries.clearAllUserData(user.id);
-    } catch (error) {
-      console.warn('Failed to clear Turso data:', error);
-    }
-
-    // Clear localStorage cache
-    const { clearCache } = await import('@/core/storage/cache');
-    clearCache();
-
-    // Detach directory if attached
-    if (get().attachedDirectory) {
-      get().detachDirectory();
-    }
-
-    // Reload prompts (will be empty)
-    await get().loadPrompts();
-  },
+      // Reload prompts (will be empty)
+      await get().loadPrompts();
+    },
 
   set: (state) => set(state),
-}));
+  };
+});
 
 // =============================================================================
 // Turso Backend Implementation
@@ -492,37 +432,184 @@ async function restorePromptInTurso(set: SetState, get: GetState, id: string): P
 // Directory Backend Implementation
 // =============================================================================
 
-async function loadPromptsFromDirectory(
+/**
+ * Compare two arrays of prompts to check if they're effectively the same
+ * Used to avoid unnecessary sync operations when no actual changes occurred
+ */
+function arePromptsEqual(prompts1: Prompt[], prompts2: Prompt[]): boolean {
+  if (prompts1.length !== prompts2.length) {
+    return false;
+  }
+  
+  // Create maps by ID for efficient comparison
+  const map1 = new Map(prompts1.map(p => [p.id, p]));
+  const map2 = new Map(prompts2.map(p => [p.id, p]));
+  
+  // Check each prompt for equality
+  for (const [id, prompt1] of map1) {
+    const prompt2 = map2.get(id);
+    if (!prompt2) {
+      return false; // Prompt with this ID doesn't exist in second array
+    }
+    
+    // Compare key fields that matter for changes
+    if (
+      prompt1.title !== prompt2.title ||
+      prompt1.description !== prompt2.description ||
+      prompt1.content !== prompt2.content ||
+      prompt1.updatedAt !== prompt2.updatedAt ||
+      prompt1.isArchived !== prompt2.isArchived ||
+      JSON.stringify(prompt1.tags.sort()) !== JSON.stringify(prompt2.tags.sort())
+    ) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+/**
+ * Initialize directory mode with comprehensive sync between directory, Turso, and FlexSearch
+ * Directory is ALWAYS the source of truth on startup - loads fresh every time
+ */
+async function initializeDirectoryMode(
   set: SetState,
   _get: GetState,
   directoryPath: string
 ): Promise<void> {
+  console.log('[DEBUG] initializeDirectoryMode called with path:', directoryPath);
   set({ loading: true, error: null });
 
   try {
-    console.log('Loading prompts from directory:', directoryPath);
+    console.log('[Directory] Initializing directory mode - DIRECTORY IS SOURCE OF TRUTH:', directoryPath);
 
-    const prompts = await directoryStorage.readPromptsFromDirectory(directoryPath);
+    // Phase 1: ALWAYS load from directory first (source of truth)
+    let directoryPrompts: Prompt[] = [];
+    let directoryError: Error | null = null;
 
-    console.log(`Loaded ${prompts.length} prompts from directory`);
+    // Force load from directory - this is the source of truth
+    try {
+      console.log('[DEBUG] FORCE LOADING from directory (source of truth):', directoryPath);
+      directoryPrompts = await directoryStorage.readPromptsFromDirectory(directoryPath);
+      console.log(`[DEBUG] Successfully loaded ${directoryPrompts.length} prompts from filesystem (SOURCE OF TRUTH)`);
+    } catch (error) {
+      directoryError = error as Error;
+      console.error('[DEBUG] CRITICAL: Failed to load from directory (source of truth):', error);
+    }
 
-    // Index for search
-    indexPrompts(prompts);
+    // Phase 2: If directory loading failed, we cannot proceed
+    if (directoryError) {
+      const errorMsg = `Directory is not accessible: ${directoryError.message}. Directory must be accessible as the source of truth.`;
+      console.error('[DEBUG] Directory access failed - cannot proceed:', errorMsg);
+      throw new Error(errorMsg);
+    }
 
-    // Start watching for changes
-    await directoryStorage.watchDirectory(directoryPath, (updatedPrompts) => {
-      console.log('[Directory] Detected change, reloading prompts');
-      indexPrompts(updatedPrompts);
-      set({ prompts: updatedPrompts });
+    // Phase 3: IMMEDIATELY index FlexSearch and set state with directory data
+    // This ensures search works instantly - don't wait for Turso backup
+    console.log('[DEBUG] Final prompts from directory (source of truth):', directoryPrompts.length);
+    indexPrompts(directoryPrompts);
+    console.log('[DEBUG] FlexSearch index updated with directory data');
+
+    console.log('[DEBUG] Setting state with directory prompts:', directoryPrompts.length);
+    set({
+      prompts: directoryPrompts,
+      loading: false,
+      directorySyncing: false
     });
 
-    set({ prompts, loading: false });
+    // Phase 4: Sync to Turso in background (non-blocking) - don't await this
+    (async () => {
+      try {
+        console.log('[DEBUG] Loading from Turso for backup/sync purposes (background)...');
+        const deviceId = getDeviceId();
+        const user = await tursoQueries.getOrCreateUser(deviceId);
+        const tursoPrompts = await tursoQueries.getPromptsByUserId(user.id, { includeArchived: true });
+        console.log(`[DEBUG] Loaded ${tursoPrompts.length} prompts from Turso (backup only)`);
+
+        // Sync directory prompts to Turso as backup
+        for (const prompt of directoryPrompts) {
+          try {
+            await tursoQueries.createPrompt(user.id, {
+              id: prompt.id,
+              title: prompt.title,
+              description: prompt.description,
+              content: prompt.content,
+              tags: prompt.tags,
+              createdAt: prompt.createdAt,
+              updatedAt: prompt.updatedAt,
+            });
+          } catch (syncError) {
+            console.warn(`[Directory] Failed to sync prompt ${prompt.id} to Turso:`, syncError);
+          }
+        }
+        console.log(`[Directory] Background sync to Turso complete`);
+      } catch (error) {
+        console.warn('[DEBUG] Failed to load/sync to Turso (continuing with directory only):', error);
+      }
+    })();
+
+    // Phase 6: Setup directory watcher for real-time updates (after initial load is complete)
+    if (!directoryError) {
+      console.log('[Directory] Setting up file watcher for real-time updates...');
+      await directoryStorage.watchDirectory(directoryPath, async (updatedPrompts) => {
+        console.log('[Directory] Filesystem change detected - checking for actual changes');
+        
+        // Get current prompts to compare with updated prompts
+        const currentPrompts = _get().prompts;
+        
+        // Check if prompts actually changed (avoid showing sync for no-op changes)
+        const promptsChanged = !arePromptsEqual(currentPrompts, updatedPrompts);
+        
+        if (!promptsChanged) {
+          console.log('[Directory] No actual changes detected, skipping sync update');
+          return; // Don't show syncing indicator if no changes
+        }
+        
+        console.log('[Directory] Actual changes detected, updating indices and state');
+
+        // Update FlexSearch index synchronously with directory data
+        indexPrompts(updatedPrompts);
+
+        // Update state with directory data (source of truth)
+        // Note: Don't show syncing indicator for file watching - only for explicit CRUD actions
+        set({ prompts: updatedPrompts });
+        
+        // Sync directory changes to Turso in background (non-blocking)
+        try {
+          const deviceId = getDeviceId();
+          const user = await tursoQueries.getOrCreateUser(deviceId);
+          
+          for (const prompt of updatedPrompts) {
+            try {
+              await tursoQueries.createPrompt(user.id, {
+                id: prompt.id,
+                title: prompt.title,
+                description: prompt.description,
+                content: prompt.content,
+                tags: prompt.tags,
+                createdAt: prompt.createdAt,
+                updatedAt: prompt.updatedAt,
+              });
+            } catch (syncError) {
+              console.warn(`[Directory] Failed to sync prompt ${prompt.id} to Turso:`, syncError);
+            }
+          }
+          console.log(`[Directory] Synced ${updatedPrompts.length} directory prompts to Turso (backup)`);
+        } catch (tursoError) {
+          console.warn('[Directory] Failed to sync to Turso (continuing with directory only):', tursoError);
+        }
+      });
+      console.log('[Directory] File watcher setup completed - directory is source of truth');
+    }
+
+    console.log('[DEBUG] Directory initialization completed successfully');
   } catch (error) {
-    console.error('Load prompts error (Directory):', error);
+    console.error('[DEBUG] Directory initialization failed:', error);
     set({
       prompts: [],
       loading: false,
-      error: 'Failed to read directory. Check if the path is valid.',
+      directorySyncing: false,
+      error: error instanceof Error ? error.message : 'Failed to initialize directory mode',
     });
   }
 }

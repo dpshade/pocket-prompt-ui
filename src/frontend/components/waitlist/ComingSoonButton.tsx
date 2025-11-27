@@ -12,10 +12,16 @@ import {
 
 interface ComingSoonButtonProps {
   className?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function ComingSoonButton({ className }: ComingSoonButtonProps) {
-  const [open, setOpen] = useState(false);
+export function ComingSoonButton({ className, open: controlledOpen, onOpenChange }: ComingSoonButtonProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // Support both controlled and uncontrolled modes
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -55,15 +61,12 @@ export function ComingSoonButton({ className }: ComingSoonButtonProps) {
   return (
     <>
       <Button
-        variant="outline"
-        size="sm"
+        variant="ghost"
+        size="icon"
         onClick={() => setOpen(true)}
-        className={`gap-2 h-10 px-3 ${className || ''}`}
+        className={className}
       >
-        <Rocket className="h-4 w-4" />
-        <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">
-          soon
-        </span>
+        <Rocket className="h-5 w-5" />
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>

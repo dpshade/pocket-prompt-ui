@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import type { DragEvent } from 'react';
-import { Upload, FolderUp, FileText, CheckCircle, AlertCircle, Copy, Download, Link, Unlink, FolderSync, RotateCcw } from 'lucide-react';
+import { Upload, FolderUp, FileText, CheckCircle, AlertCircle, Copy, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/frontend/components/ui/dialog';
 import { Button } from '@/frontend/components/ui/button';
 import { Badge } from '@/frontend/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/frontend/components/ui/tabs';
 import { importMarkdownDirectory, type FileImportResult } from '@/shared/utils/import';
 import type { Prompt } from '@/shared/types/prompt';
-import { usePrompts } from '@/frontend/hooks/usePrompts';
+
 
 interface UploadDialogProps {
   open: boolean;
@@ -60,16 +60,14 @@ export function UploadDialog({ open, onOpenChange, onImport, existingPromptIds, 
   const [preview, setPreview] = useState<FileImportResult[] | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [duplicateIds, setDuplicateIds] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState<'import' | 'export' | 'attach'>('import');
+  const [activeTab, setActiveTab] = useState<'import' | 'export'>('import');
   const [exportSelectedIds, setExportSelectedIds] = useState<Set<string>>(new Set());
   const [isExporting, setIsExporting] = useState(false);
   const [hasInitializedExport, setHasInitializedExport] = useState(false);
-  const [isAttaching, setIsAttaching] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
 
-  // Directory mode state from usePrompts
-  const { directoryMode, attachedDirectory, attachDirectory, detachDirectory, loadPrompts, resetAllData } = usePrompts();
+
 
   // Auto-select all prompts for export when first switching to export tab
   useEffect(() => {
@@ -169,100 +167,11 @@ export function UploadDialog({ open, onOpenChange, onImport, existingPromptIds, 
     setActiveTab('import');
     setHasInitializedExport(false);
     setExportSelectedIds(new Set());
-    setIsAttaching(false);
-    setShowDetachConfirm(false);
-    setShowResetConfirm(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (folderInputRef.current) folderInputRef.current.value = '';
   };
 
-  const handleAttachDirectory = async () => {
-    setIsAttaching(true);
-    try {
-      const path = await attachDirectory();
-      if (path) {
-        // Reload prompts after attaching
-        await loadPrompts();
-        onOpenChange(false);
-      }
-    } catch (error) {
-      console.error('Failed to attach directory:', error);
-    } finally {
-      setIsAttaching(false);
-    }
-  };
 
-  const [showDetachConfirm, setShowDetachConfirm] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  const handleDetachDirectory = () => {
-    setShowDetachConfirm(true);
-  };
-
-  const handleSyncDirectory = async () => {
-    if (!attachedDirectory) return;
-    
-    setIsSyncing(true);
-    try {
-      // Re-read all files from directory using directory storage
-      const { readPromptsFromDirectory } = await import('@/backend/api/directory-storage');
-      const prompts = await readPromptsFromDirectory(attachedDirectory);
-      
-      // Update FlexSearch index
-      const { indexPrompts } = await import('@/core/search');
-      indexPrompts(prompts);
-      
-      // Update prompts in state
-      const { set: setPrompts } = usePrompts.getState();
-      setPrompts({ prompts, directorySyncing: false });
-      
-      // Sync to Turso if needed
-      try {
-        const deviceId = await (await import('@/core/identity/device')).getDeviceId();
-        const { getOrCreateUser, createPrompt } = await import('@/backend/api/turso-queries');
-        const user = await getOrCreateUser(deviceId);
-        
-        for (const prompt of prompts) {
-          await createPrompt(user.id, {
-            id: prompt.id,
-            title: prompt.title,
-            description: prompt.description,
-            content: prompt.content,
-            tags: prompt.tags,
-            createdAt: prompt.createdAt,
-            updatedAt: prompt.updatedAt,
-          });
-        }
-      } catch (tursoError) {
-        console.warn('Failed to sync to Turso (continuing anyway):', tursoError);
-      }
-    } catch (error) {
-      console.error('Failed to sync directory:', error);
-      alert(`Sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const confirmDetachDirectory = async () => {
-    setShowDetachConfirm(false);
-    detachDirectory();
-    // Reload prompts from database (will be empty unless they have some in Turso)
-    await loadPrompts();
-  };
-
-  const handleResetData = () => {
-    setShowResetConfirm(true);
-  };
-
-  const confirmResetData = async () => {
-    setShowResetConfirm(false);
-    // Reset all data (Turso, FlexSearch, localStorage, directory)
-    await resetAllData();
-    // Close dialog
-    onOpenChange(false);
-  };
 
   // Detect duplicates when preview changes
   useEffect(() => {
@@ -625,8 +534,8 @@ export function UploadDialog({ open, onOpenChange, onImport, existingPromptIds, 
         </DialogHeader>
 
         <div className="px-6 pb-6">
-        <Tabs value={activeTab} onValueChange={(v: string) => setActiveTab(v as 'import' | 'export' | 'attach')}>
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs value={activeTab} onValueChange={(v: string) => setActiveTab(v as 'import' | 'export')}>
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="import" className="gap-2">
               <Download className="h-4 w-4" />
               Import
@@ -634,13 +543,6 @@ export function UploadDialog({ open, onOpenChange, onImport, existingPromptIds, 
             <TabsTrigger value="export" className="gap-2">
               <Upload className="h-4 w-4" />
               Export
-            </TabsTrigger>
-            <TabsTrigger value="attach" className="gap-2">
-              <FolderSync className="h-4 w-4" />
-              Attach
-              {directoryMode && (
-                <span className="ml-1 h-2 w-2 rounded-full bg-green-500" />
-              )}
             </TabsTrigger>
           </TabsList>
 
@@ -872,210 +774,7 @@ export function UploadDialog({ open, onOpenChange, onImport, existingPromptIds, 
             )}
           </TabsContent>
 
-          {/* Attach Tab */}
-          <TabsContent value="attach" className="space-y-4 mt-4">
-            {directoryMode && attachedDirectory ? (
-              // Currently attached state
-              <div className="space-y-4">
-                <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="rounded-full bg-green-500/20 p-2">
-                      <Link className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-green-700 dark:text-green-300">Directory Attached</h3>
-                      <p className="text-sm text-muted-foreground">Live sync enabled</p>
-                    </div>
-                  </div>
-                  <div className="bg-background/50 rounded-md p-3 font-mono text-sm break-all">
-                    {attachedDirectory}
-                  </div>
-                </div>
 
-                <div className="rounded-lg border border-border/50 bg-muted/30 p-4 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <FolderSync className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <p className="text-sm">Changes to markdown files in this directory automatically update the app</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <FileText className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <p className="text-sm">New prompts created in the app are saved as markdown files</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm">Deleting a prompt will delete the markdown file</p>
-                  </div>
-                </div>
-
-                {!showDetachConfirm ? (
-                  <>
-                  <div className="space-y-2">
-                    <Button
-                      variant="outline"
-                      onClick={handleSyncDirectory}
-                      disabled={isSyncing}
-                      className="w-full gap-2"
-                    >
-                      {isSyncing ? (
-                        <>
-                          <div className="animate-spin h-4 w-4 border-2 border-background border-t-transparent rounded-full" />
-                          Syncing...
-                        </>
-                      ) : (
-                        <>
-                          <RotateCcw className="h-4 w-4" />
-                          Sync Directory
-                        </>
-                      )}
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      onClick={handleDetachDirectory}
-                      className="w-full gap-2 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10"
-                    >
-                      <Unlink className="h-4 w-4" />
-                      Detach Directory
-                    </Button>
-
-                    <p className="text-xs text-muted-foreground text-center">
-                      Sync updates all app data to match your directory files
-                    </p>
-                  </div>
-                  </>
-                ) : (
-                  <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 space-y-3">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium text-red-600 dark:text-red-400">Confirm Detach</h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          This will remove all prompts from the app. Your markdown files will remain in the directory, but the app will start fresh with an empty library.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowDetachConfirm(false)}
-                        className="flex-1"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={confirmDetachDirectory}
-                        className="flex-1"
-                      >
-                        Detach
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              // Not attached state
-              <div className="space-y-4">
-                <div className="rounded-lg border-2 border-dashed border-border bg-muted/30 p-8 text-center">
-                  <div className="rounded-full bg-primary/10 p-4 w-fit mx-auto mb-4">
-                    <FolderSync className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">Attach a Directory</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Link a folder (like your Obsidian vault) to sync prompts as markdown files in real-time
-                  </p>
-                  <Button
-                    onClick={handleAttachDirectory}
-                    disabled={isAttaching}
-                    className="gap-2"
-                  >
-                    {isAttaching ? (
-                      <>
-                        <div className="animate-spin h-4 w-4 border-2 border-background border-t-transparent rounded-full" />
-                        Attaching...
-                      </>
-                    ) : (
-                      <>
-                        <FolderUp className="h-4 w-4" />
-                        Select Directory
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                <div className="rounded-lg border border-border/50 bg-muted/30 p-4 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm">Works with Obsidian vaults and any folder</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm">Real-time sync: edit files externally and see changes instantly</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm">Files without valid frontmatter are ignored</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm">Requires <code className="text-xs bg-muted px-1 py-0.5 rounded">id</code> and <code className="text-xs bg-muted px-1 py-0.5 rounded">title</code> in frontmatter</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Reset Data Section */}
-            <div className="mt-6 pt-6 border-t border-border/50">
-              <div className="space-y-3">
-                {!showResetConfirm ? (
-                  <Button
-                    variant="outline"
-                    onClick={handleResetData}
-                    className="w-full gap-2 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    Reset All App Data
-                  </Button>
-                ) : (
-                  <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 space-y-3">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium text-red-600 dark:text-red-400">Confirm Reset</h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          This will permanently delete all prompts, settings, and data from the app. 
-                          Your markdown files will remain untouched, but the app will start completely fresh.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowResetConfirm(false)}
-                        className="flex-1"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={confirmResetData}
-                        className="flex-1"
-                      >
-                        Reset
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground text-center">
-                  This action only affects app data - your markdown files will not be deleted
-                </p>
-              </div>
-            </div>
-          </TabsContent>
         </Tabs>
         </div>
       </DialogContent>
