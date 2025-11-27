@@ -10,6 +10,7 @@ const STORAGE_KEYS = {
   THEME: 'pktpmt_theme', // Theme is shared across versions
   SAVED_SEARCHES: `pktpmt_${PROTOCOL_VERSION}_saved_searches`,
   VIEW_MODE: 'pktpmt_view_mode', // View mode is shared across versions
+  ATTACHED_DIRECTORY: 'pktpmt_attached_directory', // Path to attached prompt directory
 } as const;
 
 /**
@@ -282,4 +283,39 @@ export function saveViewMode(mode: 'list' | 'cards'): void {
   } catch (error) {
     console.error('Error saving view mode:', error);
   }
+}
+
+/**
+ * Get attached directory path
+ * When set, the app uses this directory as the source of truth for prompts
+ */
+export function getAttachedDirectory(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.ATTACHED_DIRECTORY);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Set attached directory path
+ * Pass null to detach and return to database mode
+ */
+export function setAttachedDirectory(path: string | null): void {
+  try {
+    if (path === null) {
+      localStorage.removeItem(STORAGE_KEYS.ATTACHED_DIRECTORY);
+    } else {
+      localStorage.setItem(STORAGE_KEYS.ATTACHED_DIRECTORY, path);
+    }
+  } catch (error) {
+    console.error('Error saving attached directory:', error);
+  }
+}
+
+/**
+ * Check if app is in directory mode (has an attached directory)
+ */
+export function isDirectoryMode(): boolean {
+  return getAttachedDirectory() !== null;
 }

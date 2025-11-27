@@ -580,6 +580,33 @@ export async function deleteSavedSearch(searchId: string): Promise<void> {
   await executeMutation('DELETE FROM saved_searches WHERE id = ?', [searchId]);
 }
 
+/**
+ * Clear all user data from Turso (prompts, versions, tags, saved searches)
+ */
+export async function clearAllUserData(userId: string): Promise<void> {
+  // Delete prompt versions first (foreign key constraint)
+  await executeMutation(`
+    DELETE FROM prompt_versions 
+    WHERE prompt_id IN (
+      SELECT id FROM prompts WHERE user_id = ?
+    )
+  `, [userId]);
+
+  // Delete prompt tags
+  await executeMutation(`
+    DELETE FROM prompt_tags 
+    WHERE prompt_id IN (
+      SELECT id FROM prompts WHERE user_id = ?
+    )
+  `, [userId]);
+
+  // Delete prompts
+  await executeMutation('DELETE FROM prompts WHERE user_id = ?', [userId]);
+
+  // Delete saved searches
+  await executeMutation('DELETE FROM saved_searches WHERE user_id = ?', [userId]);
+}
+
 // =============================================================================
 // Sharing Operations
 // =============================================================================

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useMemo, useDeferredValue } from 'react';
-import { Plus, Archive as ArchiveIcon, Download, Copy } from 'lucide-react';
+import { Plus, Archive as ArchiveIcon, Download, Copy, FolderSync } from 'lucide-react';
 import { WalletButton } from '@/frontend/components/wallet/WalletButton';
 import { SearchBar, type SearchBarHandle } from '@/frontend/components/search/SearchBar';
 import { PromptListItem } from '@/frontend/components/prompts/PromptListItem';
@@ -89,6 +89,9 @@ function App() {
     setSearchQuery,
     setBooleanExpression,
     loadSavedSearch,
+    directoryMode,
+    attachedDirectory,
+    directorySyncing,
   } = usePrompts();
 
   // Defer searchQuery for filtering - keeps input responsive while filtering happens in background
@@ -122,6 +125,20 @@ function App() {
   const previousIndexRef = useRef<number>(0);
   const passwordCheckDone = useRef(false);
   const [hotkeysOpen, setHotkeysOpen] = useState(false);
+
+  // Update selected prompt when prompts change (fixes caching issue)
+  useEffect(() => {
+    if (selectedPrompt) {
+      const updatedPrompt = prompts.find(p => p.id === selectedPrompt.id);
+      if (updatedPrompt) {
+        setSelectedPrompt(updatedPrompt);
+      } else {
+        // Prompt was deleted, close dialog
+        setSelectedPrompt(null);
+        setViewDialogOpen(false);
+      }
+    }
+  }, [prompts, selectedPrompt]);
 
   // Parse deep link parameters on initial load
   useEffect(() => {
@@ -1154,6 +1171,24 @@ function App() {
       {/* Minimal Header - Action buttons only */}
       <header className="fixed top-0 right-0 z-50 pointer-events-none px-4 sm:px-6 lg:px-10 pt-[calc(env(safe-area-inset-top)+0.85rem)]" data-tauri-drag-region>
         <div className="flex items-center gap-2 pointer-events-auto">
+          {/* Directory Mode Indicator */}
+          {directoryMode && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium ${directorySyncing ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-green-500/10 text-green-600 dark:text-green-400'}`}>
+                    <FolderSync className={`h-3.5 w-3.5 ${directorySyncing ? 'animate-spin' : ''}`} />
+                    <span>{directorySyncing ? 'Syncing' : 'Linked'}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p className="font-medium mb-1">{directorySyncing ? 'Syncing with directory...' : 'Directory attached'}</p>
+                  <p className="text-xs text-muted-foreground break-all">{attachedDirectory}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
           {/* Desktop buttons */}
           <TooltipProvider>
             <Tooltip>

@@ -8,6 +8,7 @@ export interface ImportedPrompt {
   tags: string[];
   createdAt?: number;
   updatedAt?: number;
+  isArchived?: boolean;
 }
 
 export interface ImportResult {
@@ -77,6 +78,9 @@ export function parseMarkdownPrompt(fileContent: string): ImportResult {
       }
     }
 
+    // Check archived status
+    const isArchived = data.archived === true;
+
     return {
       success: true,
       prompt: {
@@ -87,6 +91,7 @@ export function parseMarkdownPrompt(fileContent: string): ImportResult {
         tags,
         createdAt,
         updatedAt,
+        isArchived,
       },
     };
   } catch (error) {
