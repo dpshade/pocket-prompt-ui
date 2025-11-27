@@ -1,5 +1,5 @@
 [package]
-name = "prompt-vault"
+name = "pocket-prompt"
 version = "0.1.0"
 description = "Your prompts, one keystroke away"
 authors = ["Dylan Shade"]

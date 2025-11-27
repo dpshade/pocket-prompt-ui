@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Pocket Prompt
+Comment=Your prompts, one keystroke away
+Exec=pocket-prompt %u
+Icon=pocket-prompt
+Terminal=false
+Categories=Utility;
+StartupWMClass=PocketPrompt
+MimeType=x-scheme-handler/pocketprompt;

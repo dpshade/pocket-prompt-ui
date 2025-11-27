@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Prompt Vault desktop app permissions",
+  "description": "Pocket Prompt desktop app permissions",
   "windows": [
     "main"
   ],
