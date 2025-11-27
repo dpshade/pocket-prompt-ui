@@ -13,7 +13,7 @@
     "test:run": "vitest run --config config/vitest.config.ts",
     "test:coverage": "vitest run --coverage --config config/vitest.config.ts",
     "tauri:build": "bun run tauri build",
-    "install-local": "pkill pocket-prompt 2>/dev/null || true && bun run tauri build && cp src-tauri/target/release/pocket-prompt ~/.local/bin/ && echo 'Installed to ~/.local/bin/pocket-prompt'"
+    "install-local": "pkill pocket-prompt 2>/dev/null || true && bunx tauri build && mkdir -p ~/.local/bin ~/.local/share/icons ~/.local/share/applications && cp src-tauri/target/release/pocket-prompt ~/.local/bin/ && cp src-tauri/icons/128x128.png ~/.local/share/icons/pocket-prompt.png && envsubst < src-tauri/files/pocket-prompt-local.desktop > ~/.local/share/applications/pocket-prompt.desktop && update-desktop-database ~/.local/share/applications 2>/dev/null || true && echo 'Installed pocket-prompt to ~/.local/bin/ with desktop entry'"
   },
   "dependencies": {
     "@libsql/client": "^0.15.15",
