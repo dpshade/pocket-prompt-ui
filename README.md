@@ -1,236 +1,287 @@
-# Pocket Prompt
+# Pocket Prompt (Desktop)
 
-> Your permanent, decentralized prompt library powered by Arweave
+> A free, local-first prompt manager with paid cloud sync and premium prompt packs.
 
-Pocket Prompt is a fully client-side, web-based application for managing and storing AI prompts on Arweave's permanent blockchain storage. Built with React, TypeScript, and Tailwind CSS.
+---
 
-## ✨ Features
+## Overview
+
+| Field | Value |
+|-------|-------|
+| **Platform** | Desktop (Tauri) |
+| **Tech Stack** | React, Tauri, Turso (libSQL embedded) |
+| **Status** | Active Development (v0.1.5) |
+| **Repo** | `pocket-prompt-ui` |
+
+---
+
+## Features
 
 ### Core Functionality
-- **🔐 Wallet Integration**: Connect with ArConnect wallet for decentralized identity
-- **🔒 Encrypted by Default**: All prompts are encrypted with your wallet's public key—only you can decrypt them
-- **📤 Free Arweave Storage**: Upload prompts under 100 KiB for free via Turbo SDK
-- **🔍 Advanced Search**: Full-text search powered by FlexSearch
-- **🏷️ Tag Management**: Organize prompts with tags and filter by multiple tags
-- **📋 One-Click Copy**: Instantly copy prompts to clipboard
-- **✏️ Edit & Version Control**: Create new versions on edit, navigate version history
-- **🗄️ Archive System**: Soft delete with ability to restore archived prompts
+- **Local-First Architecture**: Uses embedded `libSQL` (Turso) for instant, offline local storage
+- **Directory Sync**: Attach to local directories (e.g., Obsidian vaults) with real-time file watching
+- **Global Hotkey**: `Cmd+Shift+P` overlay to inject prompts anywhere
+- **Open in LLM**: Button to open prompt in your LLM of choice
+- **Pack Loader**: Import standardized JSON prompt packs
+- **Full-Text Search**: Powered by FlexSearch for instant results
+- **Tag Management**: Organize prompts with tags and multi-tag filtering
+- **One-Click Copy**: Instantly copy prompts to clipboard
+- **Edit & Version Control**: Create new versions on edit, navigate version history
+- **Archive System**: Soft delete with ability to restore archived prompts
+
+### UI/UX
+- **Search-Engine Style Layout**: Clean, centered search bar with Geist font
+- **Dark Mode**: Built-in dark/light theme toggle
+- **Responsive Design**: Works on all screen sizes
+- **Platform Integration**: macOS rounded corners, proper window decorations
+- **Keyboard Navigation**: Full keyboard shortcuts support
 
 ### Privacy & Security
-- **Private by Default**: All prompts are automatically encrypted before uploading to Arweave
-- **Wallet-Based Encryption**: Content is encrypted using your Arweave wallet's public key
-- **Optional Public Prompts**: Add the `public` tag to share prompts publicly
-- **⚠️ Permanent Storage Warning**: Once a prompt is made public on Arweave, it remains publicly accessible forever—even if you later make it private. Making it private only encrypts future uploads.
+- **100% Local by Default**: All data stored locally in embedded database
+- **Optional Cloud Sync (Paid)**: Activates Turso replication to sync across devices
+- **No Tracking**: No analytics, no telemetry
 
-### Technical Features
-- **💾 Local Caching**: localStorage-based caching for fast loading
-- **🌓 Dark Mode**: Built-in dark/light theme toggle
-- **📱 Responsive Design**: Works on desktop, tablet, and mobile
-- **🎨 Beautiful UI**: Built with shadcn/ui and Tailwind CSS
-- **⚡ Fast & Lightweight**: Client-side only, no backend required
+---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) 18+ or [Bun](https://bun.sh/)
-- [ArConnect](https://www.arconnect.io/) browser extension
+- macOS 10.15+ (Windows/Linux support coming soon)
+- [Bun](https://bun.sh/) for development
 
 ### Installation
 
+#### From Release (Recommended)
+1. Download the latest `.dmg` from [Releases](https://github.com/dpshade/pocket-prompt-ui/releases)
+2. Drag `Pocket Prompt.app` to Applications
+3. Launch and grant accessibility permissions for global hotkey
+
+#### Build from Source
 ```bash
 # Clone the repository
-git clone https://github.com/dpshade/perma-pocket.git
-cd perma-pocket
+git clone https://github.com/dpshade/pocket-prompt-ui.git
+cd pocket-prompt-ui
 
-# Install dependencies (using Bun - faster!)
+# Install dependencies
 bun install
-# or with npm
-npm install
 
-# Start development server
-bun run dev
-# or with npm
-npm run dev
+# Development mode
+bun run tauri dev
+
+# Build production app
+bun run tauri build
 ```
 
-Visit `http://localhost:5173` and connect your ArConnect wallet to get started!
+#### Install Local Binary
+```bash
+# Quick install/update script
+./install-local
+```
 
-## 📖 Usage
+---
+
+## Usage
 
 ### Getting Started
-1. **Connect Wallet**: Click "Connect Wallet" and approve the ArConnect connection
+1. **Launch App**: Use global hotkey `Cmd+Shift+P` or launch from Applications
 2. **Create Prompt**: Click "New Prompt" to create your first prompt
 3. **Add Details**: Fill in title, description, tags, and content
-4. **Upload**: Click "Create & Upload" to save to Arweave (free under 100 KiB!)
+4. **Save**: Prompts are automatically saved to local database
+
+### Directory Sync (Obsidian Integration)
+1. **Attach Directory**: Click "Attach Local Directory" in settings
+2. **Select Folder**: Choose your Obsidian vault or any markdown folder
+3. **Real-Time Sync**: File changes are automatically detected and synced
+4. **Status Indicator**: Header shows "Linked" or "Syncing..." status
 
 ### Managing Prompts
 - **Search**: Use the search bar to find prompts by title, description, content, or tags
 - **Filter by Tags**: Click tags to filter, or use the tag filter dropdown
-- **View**: Click "View" on any prompt card to see full details
+- **View**: Click any prompt card to see full details
 - **Copy**: One-click copy button on cards and in detail view
 - **Edit**: Edit prompts to create new versions (old versions preserved)
 - **Archive**: Hide prompts without deleting (can be restored)
 
 ### Version History
-- Each edit creates a new version uploaded to Arweave
-- View version history by clicking "Version History" in prompt details
+- Each edit creates a new version in the database
+- View version history in prompt details
 - Restore any previous version (creates a new version with old content)
-- All versions permanently stored on Arweave with unique transaction IDs
-
-## 🏗️ Architecture
-
-### Tech Stack
-- **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS + shadcn/ui components
-- **Storage**: Arweave (via Turbo SDK) + localStorage cache
-- **Search**: FlexSearch (client-side full-text search)
-- **State Management**: Zustand
-- **Wallet**: ArConnect integration
-
-### Project Structure
-```
-src/
-├── components/           # React components
-│   ├── ui/              # shadcn/ui base components
-│   ├── WalletButton.tsx # Wallet connection UI
-│   ├── SearchBar.tsx    # Search and tag filtering
-│   ├── PromptCard.tsx   # Prompt grid card
-│   ├── PromptDialog.tsx # Full prompt view
-│   ├── PromptEditor.tsx # Create/edit form
-│   ├── VersionHistory.tsx # Version management
-│   └── ThemeToggle.tsx  # Dark mode toggle
-├── hooks/               # Custom React hooks
-│   ├── useWallet.ts     # Wallet state management
-│   ├── usePrompts.ts    # Prompts state management
-│   └── useTheme.ts      # Theme state management
-├── lib/                 # Core utilities
-│   ├── arweave.ts       # Arweave/Turbo SDK integration
-│   ├── storage.ts       # localStorage management
-│   ├── search.ts        # FlexSearch integration
-│   └── utils.ts         # Helper functions
-└── types/               # TypeScript definitions
-    └── prompt.ts        # Data models
-```
-
-### Data Models
-
-#### Prompt
-```typescript
-interface Prompt {
-  id: string;              // UUID
-  title: string;
-  description: string;
-  content: string;         // Markdown
-  tags: string[];
-  currentTxId: string;     // Latest Arweave TX ID
-  versions: PromptVersion[]; // Version history
-  createdAt: number;
-  updatedAt: number;
-  isArchived: boolean;
-  isSynced: boolean;
-}
-```
-
-#### User Profile (localStorage)
-```typescript
-interface UserProfile {
-  address: string;         // Wallet address
-  prompts: PromptMetadata[]; // List of user's prompts
-  lastSync: number;
-}
-```
-
-## 🔧 Development
-
-### Available Scripts
-```bash
-bun run dev      # Start development server
-bun run build    # Build for production
-bun run preview  # Preview production build
-bun run lint     # Run ESLint
-
-# Testing (see TESTING.md for details)
-bunx vitest run  # Run all tests once
-bunx vitest      # Run tests in watch mode
-bunx vitest --ui # Run tests with interactive UI
-```
-
-### Environment Setup
-No environment variables needed! Pocket Prompt is 100% client-side.
-
-### Testing
-Pocket Prompt has comprehensive test coverage (175 tests) for all core logic:
-- Storage operations (localStorage)
-- Search and indexing (FlexSearch)
-- Tag filtering and organization
-- Version history management
-- Edge cases and error handling
-
-See [TESTING.md](./TESTING.md) and [EDGE_CASES.md](./EDGE_CASES.md) for details.
-
-## 🌐 Deployment
-
-Pocket Prompt can be deployed to any static hosting service:
-
-### Vercel / Netlify / Static Hosts
-```bash
-bun run build
-# Deploy dist/ folder to any static hosting service
-```
-
-Build settings:
-- **Build Command**: `bun run build` or `npm run build`
-- **Output Directory**: `dist`
-- **Install Command**: `bun install` or `npm install`
-
-### IPFS / Arweave (Fully Decentralized)
-```bash
-bun run build
-# Upload dist/ folder to IPFS or Arweave
-# Example with ArDrive CLI:
-ardrive upload-file --local-path ./dist --parent-folder-id <folder-id>
-```
-
-## 📝 Roadmap
-
-- [ ] **Import/Export**: Batch import from pocket-prompt-suite YAML files
-- [ ] **Collection Sharing**: Share entire prompt collections via Arweave
-- [ ] **Markdown Preview**: Live preview while editing
-- [ ] **PWA Support**: Offline access to cached prompts
-- [ ] **Multi-wallet**: Support for other Arweave wallets
-- [ ] **Collaboration**: Share prompts with other users
-- [ ] **Analytics**: Track most-used prompts locally
-
-## 🤝 Contributing
-
-Contributions welcome! This project is inspired by [pocket-prompt-suite](https://github.com/dpshade/pocket-prompt-suite).
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Write tests for new functionality
-4. Run tests: `bunx vitest run`
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-### Development Guidelines
-- See [AGENTS.md](./AGENTS.md) for architecture and development workflow
-- All new features should include tests
-- Follow existing code style (TypeScript + functional components)
-- Update documentation when adding features
-
-## 📄 License
-
-MIT License - see LICENSE file for details
-
-## 🙏 Acknowledgments
-
-- [Arweave](https://www.arweave.org/) - Permanent data storage
-- [ArDrive Turbo](https://ardrive.io/turbo/) - Free uploads under 100 KiB
-- [pocket-prompt-suite](https://github.com/dpshade/pocket-prompt-suite) - Original inspiration
-- [shadcn/ui](https://ui.shadcn.com/) - Beautiful component library
-- [FlexSearch](https://github.com/nextapps-de/flexsearch) - Fast search library
 
 ---
 
-**Built with ❤️ for the permanent web**
+## Project Structure
+
+```
+pocket-prompt-ui/
+├── src/
+│   ├── frontend/              # React frontend
+│   │   ├── components/        # UI components
+│   │   │   ├── prompts/      # Prompt management components
+│   │   │   ├── search/       # Search and filtering
+│   │   │   ├── shared/       # Shared UI components
+│   │   │   └── sync/         # Directory sync components
+│   │   ├── hooks/            # React hooks
+│   │   └── index.css         # Tailwind styles
+│   ├── backend/              # Tauri backend
+│   │   └── api/              # Turso database queries
+│   └── core/                 # Shared logic
+│       ├── search/           # FlexSearch integration
+│       ├── storage/          # Local storage & caching
+│       └── sync/             # Directory sync engine
+├── src-tauri/                # Tauri application
+│   ├── src/                  # Rust backend
+│   ├── icons/                # App icons (generated)
+│   └── tauri.conf.json       # Tauri configuration
+└── public/                   # Static assets
+```
+
+---
+
+## Development
+
+### Available Scripts
+```bash
+bun run dev          # Start Tauri dev server
+bun run build        # Build frontend
+bun run tauri dev    # Run Tauri in development
+bun run tauri build  # Build production app
+bun run tauri icon   # Regenerate app icons
+```
+
+### Generating App Icons
+```bash
+# Place a square PNG (1024x1024+) as app-icon.png in project root
+bun run tauri icon
+
+# This generates all required icon sizes:
+# - macOS: icon.icns
+# - Windows: icon.ico
+# - Linux: various PNG sizes
+# - iOS/Android: platform-specific sizes
+```
+
+### Tech Stack
+- **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
+- **Backend**: Rust + Tauri v2
+- **Database**: Turso (libSQL embedded mode)
+- **Search**: FlexSearch (client-side)
+- **State Management**: Zustand
+- **UI Components**: shadcn/ui
+
+---
+
+## Revenue Model
+
+| Metric | Value |
+|--------|-------|
+| Current Revenue | $0/mo |
+| Potential Revenue | $2,500/mo |
+
+### Revenue Sources
+
+1. **"Pro" Sync Subscription** — **$4/mo** or **$40/yr**
+   - Gate: Sync across 3+ devices
+   - Activates Turso cloud replication
+   - No migration needed (data format ready)
+
+2. **Official Prompt Packs** — **$10-$25** per pack
+   - Example: "The Y-Combinator Application Pack", "The Senior React Dev Pack"
+   - One-time purchase unlocks JSON import
+   - Distributed as DLC in "Store" view
+
+---
+
+## Action Plan
+
+### ✅ Completed
+- [x] Allow attaching to local dir instead of importing (2025-11-27)
+- [x] Rebrand to "Pocket Prompt" with new gradient logo (v0.1.4)
+- [x] Search-engine style UI overhaul with Geist font
+- [x] Sync status indicator and manual sync button
+- [x] Reset all data functionality with confirmation
+- [x] Local install script for easy updates
+- [x] macOS platform polish (rounded borders, proper decorations)
+
+### 🚧 In Progress
+- [ ] Fix the x-schema to work with `pocketprompt://search?q=test`
+- [ ] Add hotkeys dictionary/reference
+- [ ] Add drag and resize support on macOS
+- [ ] Add "View All Prompts" button
+
+### 📋 Planned
+- [ ] **Pack Schema**: Define JSON structure for "Pack" (Title, Description, List of Prompts)
+- [ ] **The "Store" View**: DLC marketplace for purchasable prompt packs
+- [ ] **48-hour Validation Test**:
+  1. Release Free Local Version on Twitter/Reddit
+  2. Include "Sync" waitlist modal: "$29/yr (50% off early bird)"
+  3. Success Metric: 50 active installs + 3 pre-orders
+
+---
+
+## Changelog
+
+### v0.1.5 (2025-11-28)
+- **New App Icons**: Professional gradient logo across all platforms
+- **Icon Generation**: Automated icon generation workflow using Tauri CLI
+
+### v0.1.4 (2025-11-27)
+- **Rebrand**: Renamed from "Prompt Vault" to "Pocket Prompt"
+- **New Logo**: Gradient logo (purple → pink → orange)
+- **Updated Color Scheme**: Pocket Red accent color
+
+### v0.1.3 (2025-11-27) - 22 commits
+- **Directory Sync**: Attach to local directories with real-time file watching
+- **Obsidian Integration**: Full support for Obsidian vault syncing
+- **UI Overhaul**: Search-engine style layout, centered search bar, softer design
+- **Sync Indicator**: Header shows "Linked" or "Syncing..." status
+- **Data Management**: Reset all data button with confirmation
+- **Install Script**: Added `install-local` for easy binary updates
+- **Platform Polish**: macOS improvements, better keyboard/mouse navigation
+
+---
+
+## Marketing
+
+**Primary Audience**: Developers and Power Users who want privacy and speed
+
+**Best Channels**: 
+- Product Hunt (as free tool)
+- Hacker News
+- Developer communities (Reddit r/programming, r/productivity)
+
+**Key Message**: "The fastest way to use AI. Free forever locally. Sync if you need it."
+
+---
+
+## Why This Asset
+
+- **Distribution Advantage**: Free tools spread faster than paid ones. The free local version acts as marketing
+- **Turso Leverage**: Embedded replica technology solves offline-to-online sync out of the box
+- **Monetization Optionality**: Two revenue streams (Sync SaaS + Prompt Packs DLC)
+- **Low Risk**: App functions perfectly as local-only tool if cloud costs become prohibitive
+- **Privacy-First**: Appeals to developers who want full control over their data
+
+---
+
+## Contributing
+
+Contributions welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Follow existing code style (TypeScript + Rust)
+4. Write tests for new functionality
+5. Update documentation
+6. Submit a Pull Request
+
+---
+
+## License
+
+MIT License - see LICENSE file for details
+
+---
+
+*Part of [[2025-11-25 Dylan Shade Asset Inventory]]*
+
+**Built with ❤️ for productivity and privacy**

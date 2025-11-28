@@ -1,14 +1,14 @@
-import { useState } from 'react';
-import { Rocket, Cloud, Package, Check } from 'lucide-react';
-import { Button } from '@/frontend/components/ui/button';
-import { Input } from '@/frontend/components/ui/input';
+import { useState } from "react";
+import { Rocket, Cloud, Package, Check } from "lucide-react";
+import { Button } from "@/frontend/components/ui/button";
+import { Input } from "@/frontend/components/ui/input";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/frontend/components/ui/dialog';
+} from "@/frontend/components/ui/dialog";
 
 interface ComingSoonButtonProps {
   className?: string;
@@ -16,13 +16,17 @@ interface ComingSoonButtonProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-export function ComingSoonButton({ className, open: controlledOpen, onOpenChange }: ComingSoonButtonProps) {
+export function ComingSoonButton({
+  className,
+  open: controlledOpen,
+  onOpenChange,
+}: ComingSoonButtonProps) {
   const [internalOpen, setInternalOpen] = useState(false);
 
   // Support both controlled and uncontrolled modes
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [interests, setInterests] = useState({ sync: false, packs: false });
@@ -35,11 +39,11 @@ export function ComingSoonButton({ className, open: controlledOpen, onOpenChange
     setLoading(true);
 
     const selectedInterests = [];
-    if (interests.sync) selectedInterests.push('sync');
-    if (interests.packs) selectedInterests.push('packs');
-    console.log('[Waitlist] Interest:', email, selectedInterests);
+    if (interests.sync) selectedInterests.push("sync");
+    if (interests.packs) selectedInterests.push("packs");
+    console.log("[Waitlist] Interest:", email, selectedInterests);
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     setSubmitted(true);
     setLoading(false);
@@ -49,24 +53,23 @@ export function ComingSoonButton({ className, open: controlledOpen, onOpenChange
     setOpen(false);
     setTimeout(() => {
       setSubmitted(false);
-      setEmail('');
+      setEmail("");
       setInterests({ sync: false, packs: false });
     }, 200);
   };
 
-  const toggleInterest = (key: 'sync' | 'packs') => {
-    setInterests(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggleInterest = (key: "sync" | "packs") => {
+    setInterests((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   return (
     <>
       <Button
         variant="ghost"
-        size="icon"
+        className={`h-8 w-8 p-0 ${className}`}
         onClick={() => setOpen(true)}
-        className={className}
       >
-        <Rocket className="h-5 w-5" />
+        <Rocket className="h-4 w-4" />
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -76,9 +79,7 @@ export function ComingSoonButton({ className, open: controlledOpen, onOpenChange
               <Rocket className="h-5 w-5" />
               Coming Soon
             </DialogTitle>
-            <DialogDescription>
-              What features interest you?
-            </DialogDescription>
+            <DialogDescription>What features interest you?</DialogDescription>
           </DialogHeader>
 
           {submitted ? (
@@ -101,14 +102,14 @@ export function ComingSoonButton({ className, open: controlledOpen, onOpenChange
               <div className="space-y-2">
                 <FeatureOption
                   checked={interests.sync}
-                  onCheckedChange={() => toggleInterest('sync')}
+                  onCheckedChange={() => toggleInterest("sync")}
                   icon={<Cloud className="h-4 w-4" />}
                   title="Cloud Sync"
                   description="Access prompts from any device"
                 />
                 <FeatureOption
                   checked={interests.packs}
-                  onCheckedChange={() => toggleInterest('packs')}
+                  onCheckedChange={() => toggleInterest("packs")}
                   icon={<Package className="h-4 w-4" />}
                   title="Prompt Packs"
                   description="Bundle and share collections"
@@ -128,7 +129,7 @@ export function ComingSoonButton({ className, open: controlledOpen, onOpenChange
                   className="w-full"
                   disabled={loading || (!interests.sync && !interests.packs)}
                 >
-                  {loading ? 'Joining...' : 'Join Waitlist'}
+                  {loading ? "Joining..." : "Join Waitlist"}
                 </Button>
               </form>
 
@@ -164,13 +165,15 @@ function FeatureOption({
       <div
         className={`h-5 w-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
           checked
-            ? 'bg-primary border-primary text-primary-foreground'
-            : 'border-muted-foreground/40 group-hover:border-primary/60'
+            ? "bg-primary border-primary text-primary-foreground"
+            : "border-muted-foreground/40 group-hover:border-primary/60"
         }`}
       >
         {checked && <Check className="h-3 w-3" />}
       </div>
-      <div className={`p-1.5 rounded-md transition-colors ${checked ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+      <div
+        className={`p-1.5 rounded-md transition-colors ${checked ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+      >
         {icon}
       </div>
       <div className="flex-1 min-w-0">

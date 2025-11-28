@@ -3,6 +3,9 @@ use tauri::{Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
 
+mod plugins;
+use plugins::mac_rounded_corners;
+
 // State to hold pending deep link URL until frontend is ready
 struct PendingDeepLink(Mutex<Option<String>>);
 
@@ -28,29 +31,40 @@ fn frontend_ready(state: tauri::State<PendingDeepLink>) -> Option<String> {
 pub fn run() {
     tauri::Builder::default()
         .manage(PendingDeepLink(Mutex::new(None)))
-        .invoke_handler(tauri::generate_handler![frontend_ready])
+        .invoke_handler(tauri::generate_handler![
+            frontend_ready,
+            mac_rounded_corners::enable_rounded_corners,
+            mac_rounded_corners::enable_modern_window_style,
+            mac_rounded_corners::reposition_traffic_lights
+        ])
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             // Forward deep link args to running instance
             if let Some(url) = args.get(1) {
                 log::info!("[SingleInstance] Found arg: {}", url);
                 if url.starts_with("promptvault://") {
                     log::info!("[SingleInstance] Forwarding deep link: {}", url);
-                    
+
                     // Try multiple times with delays to ensure frontend receives the event
                     let app_clone = app.clone();
                     let url_clone = url.clone();
-                    
+
                     // Immediate emit
                     let _ = app.emit("deep-link", url.clone());
-                    
+
                     // Delayed emit attempts
                     std::thread::spawn(move || {
                         std::thread::sleep(std::time::Duration::from_millis(500));
-                        log::info!("[SingleInstance] Emitting deep-link event (500ms delay): {}", url_clone);
+                        log::info!(
+                            "[SingleInstance] Emitting deep-link event (500ms delay): {}",
+                            url_clone
+                        );
                         let _ = app_clone.emit("deep-link", url_clone.clone());
-                        
+
                         std::thread::sleep(std::time::Duration::from_millis(1000));
-                        log::info!("[SingleInstance] Emitting deep-link event (1500ms delay): {}", url_clone);
+                        log::info!(
+                            "[SingleInstance] Emitting deep-link event (1500ms delay): {}",
+                            url_clone
+                        );
                         let _ = app_clone.emit("deep-link", url_clone);
                     });
                 } else {
@@ -86,7 +100,10 @@ pub fn run() {
                 log::info!("[DeepLink] Development mode detected - ensuring protocol registration");
                 // In development, also try to register via alternative method
                 if let Err(e) = app.deep_link().register("promptvault") {
-                    log::warn!("Failed to register promptvault scheme specifically: {:?}", e);
+                    log::warn!(
+                        "Failed to register promptvault scheme specifically: {:?}",
+                        e
+                    );
                 } else {
                     log::info!("promptvault scheme registered successfully");
                 }
@@ -138,15 +155,16 @@ pub fn run() {
 
             let window = app.get_webview_window("main").unwrap();
 
-            app.global_shortcut().on_shortcut(shortcut, move |_app, _shortcut, _event| {
-                // Toggle window visibility
-                if window.is_visible().unwrap_or(false) {
-                    let _ = window.hide();
-                } else {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
-            })?;
+            app.global_shortcut()
+                .on_shortcut(shortcut, move |_app, _shortcut, _event| {
+                    // Toggle window visibility
+                    if window.is_visible().unwrap_or(false) {
+                        let _ = window.hide();
+                    } else {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                })?;
 
             Ok(())
         })

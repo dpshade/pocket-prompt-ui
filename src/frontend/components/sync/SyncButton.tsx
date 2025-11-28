@@ -102,8 +102,8 @@ export function SyncButton() {
 
   return (
     <>
-      <Button variant="ghost" size="icon" onClick={handleClick}>
-        <RotateCcw className="h-5 w-5" />
+      <Button variant="ghost" className="h-8 w-8 p-0" onClick={handleClick}>
+        <RotateCcw className="h-4 w-4" />
       </Button>
 
       <Dialog open={showModal} onOpenChange={setShowModal}>

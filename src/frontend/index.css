@@ -1,41 +1,46 @@
 @font-face {
-  font-family: 'Geist';
-  src: url('/node_modules/geist/dist/fonts/geist-sans/Geist-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+    font-family: "Geist";
+    src: url("/node_modules/geist/dist/fonts/geist-sans/Geist-Regular.woff2")
+        format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
 }
 
 @font-face {
-  font-family: 'Geist';
-  src: url('/node_modules/geist/dist/fonts/geist-sans/Geist-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
+    font-family: "Geist";
+    src: url("/node_modules/geist/dist/fonts/geist-sans/Geist-Medium.woff2")
+        format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
 }
 
 @font-face {
-  font-family: 'Geist';
-  src: url('/node_modules/geist/dist/fonts/geist-sans/Geist-SemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
+    font-family: "Geist";
+    src: url("/node_modules/geist/dist/fonts/geist-sans/Geist-SemiBold.woff2")
+        format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
 }
 
 @font-face {
-  font-family: 'Geist';
-  src: url('/node_modules/geist/dist/fonts/geist-sans/Geist-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
+    font-family: "Geist";
+    src: url("/node_modules/geist/dist/fonts/geist-sans/Geist-Bold.woff2")
+        format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
 }
 
 @font-face {
-  font-family: 'Geist Mono';
-  src: url('/node_modules/geist/dist/fonts/geist-mono/GeistMono-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+    font-family: "Geist Mono";
+    src: url("/node_modules/geist/dist/fonts/geist-mono/GeistMono-Regular.woff2")
+        format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
 }
 
 @tailwind base;
@@ -43,289 +48,307 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --font-geist-sans: 'Geist', sans-serif;
-    --font-geist-mono: 'Geist Mono', monospace;
-    --background: 0 0% 97%;
-    --foreground: 0 0% 9%;
-    --card: 0 0% 99%;
-    --card-foreground: 0 0% 9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
-    /* Pocket Red - softer, less saturated */
-    --primary: 351 70% 65%;
-    --primary-hover: 351 65% 58%;
-    --primary-pressed: 350 60% 52%;
-    --primary-soft: 351 50% 94%;
-    --primary-foreground: 0 0% 100%;
-    /* Sunset Yellow - sunshine pastel for tags */
-    --secondary: 45 70% 92%;
-    --secondary-hover: 45 65% 87%;
-    --secondary-pressed: 45 60% 80%;
-    --secondary-soft: 45 50% 96%;
-    --secondary-foreground: 40 40% 30%;
-    --muted: 0 0% 94%;
-    --muted-foreground: 0 0% 46%;
-    /* Accent uses primary (Pocket Red) */
-    --accent: 351 70% 65%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 350 60% 52%;
-    --radius: 1.5rem;
-  }
+    :root {
+        --font-geist-sans: "Geist", sans-serif;
+        --font-geist-mono: "Geist Mono", monospace;
+        --background: 0 0% 97%;
+        --foreground: 0 0% 9%;
+        --card: 0 0% 99%;
+        --card-foreground: 0 0% 9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 0 0% 9%;
+        /* Pocket Red - softer, less saturated */
+        --primary: 351 70% 65%;
+        --primary-hover: 351 65% 58%;
+        --primary-pressed: 350 60% 52%;
+        --primary-soft: 351 50% 94%;
+        --primary-foreground: 0 0% 100%;
+        /* Sunset Yellow - sunshine pastel for tags */
+        --secondary: 45 70% 92%;
+        --secondary-hover: 45 65% 87%;
+        --secondary-pressed: 45 60% 80%;
+        --secondary-soft: 45 50% 96%;
+        --secondary-foreground: 40 40% 30%;
+        --muted: 0 0% 94%;
+        --muted-foreground: 0 0% 46%;
+        /* Accent uses primary (Pocket Red) */
+        --accent: 351 70% 65%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 0 0% 90%;
+        --input: 0 0% 90%;
+        --ring: 350 60% 52%;
+        --radius: 1.5rem;
+    }
 
-  .dark {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 98%;
-    /* Pocket Red - softer for dark mode */
-    --primary: 351 65% 68%;
-    --primary-hover: 351 60% 62%;
-    --primary-pressed: 350 55% 55%;
-    --primary-soft: 351 30% 18%;
-    --primary-foreground: 0 0% 100%;
-    /* Sunset Yellow - sunshine pastel for dark mode tags */
-    --secondary: 45 50% 30%;
-    --secondary-hover: 45 55% 35%;
-    --secondary-pressed: 45 60% 40%;
-    --secondary-soft: 45 35% 18%;
-    --secondary-foreground: 45 60% 92%;
-    --muted: 0 0% 14%;
-    --muted-foreground: 0 0% 75%;
-    /* Accent uses primary (Pocket Red) */
-    --accent: 351 65% 68%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 350 55% 55%;
-  }
+    .dark {
+        --background: 0 0% 7%;
+        --foreground: 0 0% 98%;
+        --card: 0 0% 9%;
+        --card-foreground: 0 0% 98%;
+        --popover: 0 0% 9%;
+        --popover-foreground: 0 0% 98%;
+        /* Pocket Red - softer for dark mode */
+        --primary: 351 65% 68%;
+        --primary-hover: 351 60% 62%;
+        --primary-pressed: 350 55% 55%;
+        --primary-soft: 351 30% 18%;
+        --primary-foreground: 0 0% 100%;
+        /* Sunset Yellow - sunshine pastel for dark mode tags */
+        --secondary: 45 50% 30%;
+        --secondary-hover: 45 55% 35%;
+        --secondary-pressed: 45 60% 40%;
+        --secondary-soft: 45 35% 18%;
+        --secondary-foreground: 45 60% 92%;
+        --muted: 0 0% 14%;
+        --muted-foreground: 0 0% 75%;
+        /* Accent uses primary (Pocket Red) */
+        --accent: 351 65% 68%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 0 0% 18%;
+        --input: 0 0% 18%;
+        --ring: 350 55% 55%;
+    }
 }
 
 @layer base {
-  body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    font-family: var(--font-geist-sans);
-  }
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
 
-  /* macOS native window border radius to match OS style */
-  html[data-platform="macos"] {
-    border-radius: 10px;
-    overflow: hidden;
-  }
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: var(--font-geist-sans);
+    }
+
+    /* macOS native window border radius for transparent window */
+    html[data-platform="macos"],
+    html[data-platform="macos"] body,
+    html[data-platform="macos"] #root {
+        border-radius: 10px;
+        overflow: hidden;
+    }
 }
 
 @layer utilities {
-  /* Whimsical animations */
-  @keyframes bounce-slow {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-  }
-
-  @keyframes wiggle {
-    0%, 100% {
-      transform: rotate(0deg);
-    }
-    25% {
-      transform: rotate(-3deg);
-    }
-    75% {
-      transform: rotate(3deg);
-    }
-  }
-
-  @keyframes press-bounce {
-    0% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(0.95);
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes fadeOut {
-    from {
-      opacity: 1;
-    }
-    to {
-      opacity: 0;
-    }
-  }
-
-  .animate-bounce-slow {
-    animation: bounce-slow 3s ease-in-out infinite;
-  }
-
-  .animate-wiggle {
-    animation: wiggle 1s ease-in-out;
-  }
-
-  /* Mobile-first responsive utilities */
-  @media (min-width: 480px) {
-    .xs\:inline {
-      display: inline;
-    }
-    .xs\:hidden {
-      display: none;
-    }
-  }
-
-  /* Touch-friendly hover effects */
-  @media (hover: hover) and (pointer: fine) {
-    .hover-lift:hover {
-      transform: translateY(-2px);
-      transition: transform 200ms ease;
+    /* Whimsical animations */
+    @keyframes bounce-slow {
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
     }
 
-    .hover-scale:hover {
-      transform: scale(1.02);
-      transition: transform 200ms ease;
-    }
-  }
-
-  /* Floating search bar shadow + glow + frosted glass */
-  .floating-searchbar-shadow {
-    box-shadow:
-      0 -4px 20px -4px hsl(var(--primary) / 0.25),
-      0 -8px 40px -8px hsl(var(--primary) / 0.15),
-      0 25px 50px -12px rgb(0 0 0 / 0.4);
-  }
-
-  .floating-searchbar-shadow > * {
-    backdrop-filter: blur(12px) saturate(1.5);
-    -webkit-backdrop-filter: blur(12px) saturate(1.5);
-    background-color: hsl(var(--card) / 0.85);
-  }
-
-  /* Subtle shadow to replace borders */
-  .shadow-soft {
-    box-shadow:
-      0 8px 20px #0f172a1a,
-      0 4px 10px #0f172a14;
-  }
-
-  .shadow-soft-lg {
-    box-shadow:
-      0 18px 40px #0f172a2e,
-      0 8px 20px #0f172a1a;
-  }
-
-  .dark .shadow-soft {
-    box-shadow:
-      0 8px 20px rgb(0 0 0 / 0.4),
-      0 4px 10px rgb(0 0 0 / 0.3),
-      0 0 0 1px rgb(255 255 255 / 0.04);
-  }
-
-  .dark .shadow-soft-lg {
-    box-shadow:
-      0 18px 40px rgb(0 0 0 / 0.55),
-      0 8px 20px rgb(0 0 0 / 0.4),
-      0 0 0 1px rgb(255 255 255 / 0.05);
-  }
-
-  /* Extra large shadow for prominent elements */
-  .shadow-soft-xl {
-    box-shadow:
-      0 24px 50px #0f172a38,
-      0 12px 25px #0f172a20;
-  }
-
-  .dark .shadow-soft-xl {
-    box-shadow:
-      0 24px 50px rgb(0 0 0 / 0.65),
-      0 12px 25px rgb(0 0 0 / 0.45),
-      0 0 0 1px rgb(255 255 255 / 0.06);
-  }
-
-  /* List item styles - shared between hover and keyboard selection */
-  .list-item-hoverable::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background-color: transparent;
-  }
-
-  /* List item hover state - only when not in keyboard mode */
-  /* No transitions - styles appear/disappear instantly */
-  @media (hover: hover) {
-    [data-keyboard-mode='false'] .list-item-hoverable:hover {
-      background-color: hsl(var(--primary) / 0.08);
+    @keyframes wiggle {
+        0%,
+        100% {
+            transform: rotate(0deg);
+        }
+        25% {
+            transform: rotate(-3deg);
+        }
+        75% {
+            transform: rotate(3deg);
+        }
     }
 
-    [data-keyboard-mode='false'] .list-item-hoverable:hover::before {
-      background-color: hsl(var(--primary));
+    @keyframes press-bounce {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(0.95);
+        }
+        100% {
+            transform: scale(1);
+        }
     }
 
-
-    /* Card hover state - only when not in keyboard mode */
-    [data-keyboard-mode='false'] .card-hoverable:hover {
-      background-color: hsl(var(--primary) / 0.05);
-      transform: translateY(-4px) scale(1.02);
-      box-shadow:
-        0 18px 40px #0f172a2e,
-        0 8px 20px #0f172a1a;
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
     }
 
-    .dark [data-keyboard-mode='false'] .card-hoverable:hover {
-      box-shadow:
-        0 18px 40px rgb(0 0 0 / 0.55),
-        0 8px 20px rgb(0 0 0 / 0.4),
-        0 0 0 1px rgb(255 255 255 / 0.05);
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+        }
+        to {
+            opacity: 0;
+        }
     }
-  }
 
-  /* Keyboard selection states - identical to hover */
-  .list-item-selected {
-    background-color: hsl(var(--primary) / 0.08);
-  }
+    .animate-bounce-slow {
+        animation: bounce-slow 3s ease-in-out infinite;
+    }
 
-  .list-item-selected::before {
-    background-color: hsl(var(--primary));
-  }
+    .animate-wiggle {
+        animation: wiggle 1s ease-in-out;
+    }
 
-  .card-selected,
-  [data-selected='true'] > .card-hoverable {
-    background-color: hsl(var(--primary) / 0.05);
-    transform: translateY(-4px) scale(1.02);
-    box-shadow:
-      0 18px 40px #0f172a2e,
-      0 8px 20px #0f172a1a;
-  }
+    /* Custom logo drop shadows - offset to lower left */
+    .drop-shadow-logo {
+        filter: drop-shadow(-2px 2px 3px rgba(0, 0, 0, 0.3));
+    }
 
-  .dark .card-selected,
-  .dark [data-selected='true'] > .card-hoverable {
-    box-shadow:
-      0 18px 40px rgb(0 0 0 / 0.55),
-      0 8px 20px rgb(0 0 0 / 0.4),
-      0 0 0 1px rgb(255 255 255 / 0.05);
-  }
+    .drop-shadow-logo-lg {
+        filter: drop-shadow(-3px 3px 5px rgba(0, 0, 0, 0.35));
+    }
 
+    /* Mobile-first responsive utilities */
+    @media (min-width: 480px) {
+        .xs\:inline {
+            display: inline;
+        }
+        .xs\:hidden {
+            display: none;
+        }
+    }
+
+    /* Touch-friendly hover effects */
+    @media (hover: hover) and (pointer: fine) {
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            transition: transform 200ms ease;
+        }
+
+        .hover-scale:hover {
+            transform: scale(1.02);
+            transition: transform 200ms ease;
+        }
+    }
+
+    /* Floating search bar shadow + glow + frosted glass */
+    .floating-searchbar-shadow {
+        box-shadow:
+            0 -4px 20px -4px hsl(var(--primary) / 0.25),
+            0 -8px 40px -8px hsl(var(--primary) / 0.15),
+            0 25px 50px -12px rgb(0 0 0 / 0.4);
+    }
+
+    .floating-searchbar-shadow > * {
+        backdrop-filter: blur(12px) saturate(1.5);
+        -webkit-backdrop-filter: blur(12px) saturate(1.5);
+        background-color: hsl(var(--card) / 0.85);
+    }
+
+    /* Subtle shadow to replace borders */
+    .shadow-soft {
+        box-shadow:
+            0 8px 20px #0f172a1a,
+            0 4px 10px #0f172a14;
+    }
+
+    .shadow-soft-lg {
+        box-shadow:
+            0 18px 40px #0f172a2e,
+            0 8px 20px #0f172a1a;
+    }
+
+    .dark .shadow-soft {
+        box-shadow:
+            0 8px 20px rgb(0 0 0 / 0.4),
+            0 4px 10px rgb(0 0 0 / 0.3),
+            0 0 0 1px rgb(255 255 255 / 0.04);
+    }
+
+    .dark .shadow-soft-lg {
+        box-shadow:
+            0 18px 40px rgb(0 0 0 / 0.55),
+            0 8px 20px rgb(0 0 0 / 0.4),
+            0 0 0 1px rgb(255 255 255 / 0.05);
+    }
+
+    /* Extra large shadow for prominent elements */
+    .shadow-soft-xl {
+        box-shadow:
+            0 24px 50px #0f172a38,
+            0 12px 25px #0f172a20;
+    }
+
+    .dark .shadow-soft-xl {
+        box-shadow:
+            0 24px 50px rgb(0 0 0 / 0.65),
+            0 12px 25px rgb(0 0 0 / 0.45),
+            0 0 0 1px rgb(255 255 255 / 0.06);
+    }
+
+    /* List item styles - shared between hover and keyboard selection */
+    .list-item-hoverable::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background-color: transparent;
+    }
+
+    /* List item hover state - only when not in keyboard mode */
+    /* No transitions - styles appear/disappear instantly */
+    @media (hover: hover) {
+        [data-keyboard-mode="false"] .list-item-hoverable:hover {
+            background-color: hsl(var(--primary) / 0.08);
+        }
+
+        [data-keyboard-mode="false"] .list-item-hoverable:hover::before {
+            background-color: hsl(var(--primary));
+        }
+
+        /* Card hover state - only when not in keyboard mode */
+        [data-keyboard-mode="false"] .card-hoverable:hover {
+            background-color: hsl(var(--primary) / 0.05);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow:
+                0 18px 40px #0f172a2e,
+                0 8px 20px #0f172a1a;
+        }
+
+        .dark [data-keyboard-mode="false"] .card-hoverable:hover {
+            box-shadow:
+                0 18px 40px rgb(0 0 0 / 0.55),
+                0 8px 20px rgb(0 0 0 / 0.4),
+                0 0 0 1px rgb(255 255 255 / 0.05);
+        }
+    }
+
+    /* Keyboard selection states - identical to hover */
+    .list-item-selected {
+        background-color: hsl(var(--primary) / 0.08);
+    }
+
+    .list-item-selected::before {
+        background-color: hsl(var(--primary));
+    }
+
+    .card-selected,
+    [data-selected="true"] > .card-hoverable {
+        background-color: hsl(var(--primary) / 0.05);
+        transform: translateY(-4px) scale(1.02);
+        box-shadow:
+            0 18px 40px #0f172a2e,
+            0 8px 20px #0f172a1a;
+    }
+
+    .dark .card-selected,
+    .dark [data-selected="true"] > .card-hoverable {
+        box-shadow:
+            0 18px 40px rgb(0 0 0 / 0.55),
+            0 8px 20px rgb(0 0 0 / 0.4),
+            0 0 0 1px rgb(255 255 255 / 0.05);
+    }
 }
