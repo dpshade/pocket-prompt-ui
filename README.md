@@ -150,19 +150,35 @@ bun run tauri build  # Build production app
 
 ### Generating App Icons
 
-**IMPORTANT**: Do NOT use `bun run tauri icon` as it creates a gray border artifact around the icon on macOS. Use the custom script instead.
+**IMPORTANT**: macOS 26 (Tahoe) requires "Liquid Glass" icons in Assets.car format. Use our custom scripts for proper icon generation.
 
+#### For macOS 26+ (Liquid Glass Icons)
 ```bash
 # Place a square PNG (1024x1024+) as app-icon.png in project root
+./generate-liquid-glass-icon.sh
+
+# This script generates macOS 26-compatible Liquid Glass icons:
+# - Creates Assets.xcassets with all required icon sizes
+# - Compiles to Assets.car using Apple's actool
+# - Prevents the grey border issue on macOS 26 (Tahoe)
+# - Requires Xcode Command Line Tools
+```
+
+#### For macOS <26 (Legacy .icns Icons)
+```bash
+# Generates traditional .icns format for backward compatibility
 ./generate-icon.sh
 
-# This custom script generates clean icons without the gray halo bug:
+# This script generates clean .icns icons:
 # - Uses ImageMagick + iconutil for macOS .icns
 # - Preserves transparency and gradients properly
 # - Avoids the Tauri icon generator's border artifact
 ```
 
-**Technical Details**: The Tauri icon generator has a known issue where it adds a gray "halo" around transparent icons on macOS. Our custom script uses ImageMagick to resize the source image and Apple's `iconutil` to generate the `.icns` file, producing clean icons without artifacts.
+**Technical Details**: 
+- **macOS 26 (Tahoe)** enforces squircle-shaped app icons using the new "Liquid Glass" design system. Apps using the old `.icns` format will have a grey border added by the system.
+- Our `generate-liquid-glass-icon.sh` script creates an `Assets.xcassets` structure and compiles it to `Assets.car` using Apple's `actool`, ensuring proper Liquid Glass appearance.
+- The app maintains both formats (`.icns` and `Assets.car`) for backward compatibility with older macOS versions.
 
 ### Tech Stack
 - **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS

@@ -48,6 +48,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": [],
     "category": "Utility",
     "shortDescription": "Your prompts, one keystroke away",
     "longDescription": "Pocket Prompt is a local-first prompt manager. Save, organize, and instantly access your best AI prompts with a global hotkey.",

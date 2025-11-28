@@ -596,9 +596,8 @@ function App() {
       });
       try {
         // Dynamic import to avoid issues in web environment
-        const { getCurrent, onOpenUrl } = await import(
-          "@tauri-apps/plugin-deep-link"
-        );
+        const { getCurrent, onOpenUrl } =
+          await import("@tauri-apps/plugin-deep-link");
         const { listen } = await import("@tauri-apps/api/event");
         const { invoke } = await import("@tauri-apps/api/core");
         console.log("[App] Deep link imports complete");
@@ -1511,7 +1510,7 @@ function App() {
         <div className="text-center space-y-6 max-w-md">
           <div className="relative inline-block">
             <img
-              src="/Pocket Prompt/Little P UI.png"
+              src="/Logos/Little P UI.png"
               alt="Pocket Prompt Logo"
               className="h-24 w-24 drop-shadow-logo-lg"
             />
@@ -1607,7 +1606,7 @@ function App() {
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <img
-              src="/Pocket Prompt/Little P UI.png"
+              src="/Logos/Little P UI.png"
               alt="Pocket Prompt Logo"
               className="h-5 w-5 drop-shadow-logo"
             />
@@ -1635,7 +1634,7 @@ function App() {
             {/* Desktop Logo - Hidden on mobile */}
             <div className="hidden sm:flex items-center justify-center gap-3 mb-8">
               <img
-                src="/Pocket Prompt/Little P UI.png"
+                src="/Logos/Little P UI.png"
                 alt="Pocket Prompt Logo"
                 className="h-8 w-8 drop-shadow-logo"
               />
