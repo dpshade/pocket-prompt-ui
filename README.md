@@ -145,20 +145,24 @@ bun run dev          # Start Tauri dev server
 bun run build        # Build frontend
 bun run tauri dev    # Run Tauri in development
 bun run tauri build  # Build production app
-bun run tauri icon   # Regenerate app icons
+./generate-icon.sh   # Regenerate app icons (custom script)
 ```
 
 ### Generating App Icons
+
+**IMPORTANT**: Do NOT use `bun run tauri icon` as it creates a gray border artifact around the icon on macOS. Use the custom script instead.
+
 ```bash
 # Place a square PNG (1024x1024+) as app-icon.png in project root
-bun run tauri icon
+./generate-icon.sh
 
-# This generates all required icon sizes:
-# - macOS: icon.icns
-# - Windows: icon.ico
-# - Linux: various PNG sizes
-# - iOS/Android: platform-specific sizes
+# This custom script generates clean icons without the gray halo bug:
+# - Uses ImageMagick + iconutil for macOS .icns
+# - Preserves transparency and gradients properly
+# - Avoids the Tauri icon generator's border artifact
 ```
+
+**Technical Details**: The Tauri icon generator has a known issue where it adds a gray "halo" around transparent icons on macOS. Our custom script uses ImageMagick to resize the source image and Apple's `iconutil` to generate the `.icns` file, producing clean icons without artifacts.
 
 ### Tech Stack
 - **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
